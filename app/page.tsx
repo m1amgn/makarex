@@ -3,8 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useWalletClient } from 'wagmi';
-import { useIpAsset, useNftClient, PIL_TYPE } from '@story-protocol/react-sdk';
-import { Address, toHex } from 'viem';
+import { useIpAsset, PIL_TYPE } from '@story-protocol/react-sdk';
 import { createHash } from 'crypto';
 
 
@@ -41,7 +40,7 @@ const HomePage: React.FC = () => {
     if (response.ok) {
       return data.IpfsHash;
     } else {
-      throw new Error(data.message || 'Ошибка при загрузке на IPFS');
+      throw new Error(data.message || 'Error uploading to IPFS');
     }
   };
   const handleChange = (
@@ -55,28 +54,20 @@ const HomePage: React.FC = () => {
     e.preventDefault();
 
     if (!isConnected || !address) {
-      setErrorMessage('Пожалуйста, подключите кошелек.');
+      setErrorMessage('Please connect your wallet.');
       return;
     } else {
-      console.log('Адрес кошелька:', address);
+      console.log('Wallet address:', address);
     }
 
     if (!wallet) {
-      setErrorMessage('Ошибка: кошелек не найден. Попробуйте снова.');
+      setErrorMessage('Error: wallet not found. Please try again.');
       return;
     } else {
-      console.log('Адрес кошелька:', address);
+      console.log('Wallet address:', address);
     }
 
     try {
-      // const attributesArray = formData.attributes
-      //   .split(',')
-      //   .map((attr) => {
-      //     const [key, value] = attr.split(':');
-      //     return { key: key.trim(), value: value.trim() };
-      //   })
-      //   .filter((attr) => attr.key && attr.value);
-
       const ipMetadata = {
         title: formData.title,
         description: formData.description,
@@ -94,7 +85,7 @@ const HomePage: React.FC = () => {
       const ipHash = `0x${createHash('sha256')
         .update(JSON.stringify(ipMetadata))
         .digest('hex')}`;
-    
+
       const nftIpfsHash = await uploadJSONToIPFS(nftMetadata);
       const nftHash = `0x${createHash('sha256')
         .update(JSON.stringify(nftMetadata))
@@ -125,13 +116,7 @@ const HomePage: React.FC = () => {
 
       console.log('Response:', response);
 
-      alert(`
-        Success. 
-        TX ${response.txHash},
-        NFT Token ID: ${response.tokenId},
-        IPA ID: ${response.ipId},
-        License Terms ID: ${response.licenseTermsId}
-      `);
+      alert(`IPA: https://explorer.story.foundation/ipa/${response.ipId}`);
     } catch (error: any) {
       console.error('Error in registration IPA:', error);
       setErrorMessage(`Error in registration IPA: ${error.message}`);
