@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/some_scripts
+spg_nft_owners.json
 /.pnp
 .pnp.js
 .yarn/install-state.gz
