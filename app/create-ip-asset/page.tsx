@@ -16,11 +16,13 @@ const CreateIpaPage: React.FC = () => {
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
+    imageFile: File | null;
     watermarkImg: string;
     attributes: string;
   }>({
     title: '',
     description: '',
+    imageFile: null,
     watermarkImg: '',
     attributes: '',
   });
@@ -72,11 +74,35 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
+  // Новая функция для загрузки файла на IPFS
+  const uploadFileToIPFS = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/upload_to_ipfs', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      return data.IpfsHash;
+    } else {
+      throw new Error(data.message || 'Error uploading file to IPFS');
+    }
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === 'imageFile') {
+      const file = (e.target as HTMLInputElement).files?.[0] || null;
+      setFormData((prev) => ({ ...prev, imageFile: file }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleCollectionChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -151,6 +177,15 @@ const CreateIpaPage: React.FC = () => {
     }
 
     try {
+      if (!formData.imageFile) {
+        setErrorMessage('Please select an image file.');
+        setLoading(false);
+        return;
+      }
+
+      // Загружаем изображение на IPFS
+      const imageIpfsHash = await uploadFileToIPFS(formData.imageFile);
+
       const ipMetadata = {
         title: formData.title,
         description: formData.description,
@@ -161,7 +196,7 @@ const CreateIpaPage: React.FC = () => {
       const nftMetadata = {
         name: formData.title,
         description: formData.description,
-        image: 'https://picsum.photos/200',
+        image: `https://ipfs.io/ipfs/${imageIpfsHash}`,
       };
 
       const ipIpfsHash = await uploadJSONToIPFS(ipMetadata);
@@ -271,6 +306,20 @@ const CreateIpaPage: React.FC = () => {
                     required
                     rows={4}
                     className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+                </div>
+                {/* Новое поле для загрузки изображения */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Upload Image
+                  </label>
+                  <input
+                    type="file"
+                    name="imageFile"
+                    accept="image/*"
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full"
                   />
                 </div>
                 <div>
