@@ -183,7 +183,6 @@ const CreateIpaPage: React.FC = () => {
         return;
       }
 
-      // Загружаем изображение на IPFS
       const imageIpfsHash = await uploadFileToIPFS(formData.imageFile);
 
       const ipMetadata = {
@@ -308,7 +307,6 @@ const CreateIpaPage: React.FC = () => {
                     className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
-                {/* Новое поле для загрузки изображения */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Upload Image

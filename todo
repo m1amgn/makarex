@@ -1,1 +1,13 @@
-If no imageUrl, fetch it from tokenUri.
+Learn:
+- about fields of metadata
+- about attributes
+- about PIL
+- about rules of using IP
+- about correction of rules after mint
+
+Make new form depends on information
+
+Fix bug with attributes visualisation
+
+Make new visualisation page
+

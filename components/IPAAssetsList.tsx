@@ -2,13 +2,27 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
+import { useRouter } from 'next/navigation';
+
+interface IPAAsset {
+  id: string;
+  nftMetadata: {
+    name: string;
+    imageUrl: string;
+    tokenUri: string;
+    tokenId: string;
+    tokenContract: string;
+  };
+}
 
 const IPAAssetsList: React.FC = () => {
   const { address, isConnected } = useAccount();
-  const [ipaAssets, setIpaAssets] = useState<any[]>([]);
+  const [ipaAssets, setIpaAssets] = useState<IPAAsset[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nftContract, setNftContract] = useState<string | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     if (isConnected && address) {
@@ -49,15 +63,33 @@ const IPAAssetsList: React.FC = () => {
         body: JSON.stringify({
           options: { tokenContractIds: [nftContractAddress] },
         }),
+        cache: 'no-store' as RequestCache,
       };
 
-      const response = await fetch('https://edge.stg.storyprotocol.net/api/v1/assets', options);
+      const response = await fetch('https://api.storyprotocol.net/api/v1/assets', options);
       if (!response.ok) {
         throw new Error('Error fetching data from server');
       }
 
       const data = await response.json();
-      setIpaAssets(data.data);
+
+      const assetsWithImages = await Promise.all(
+        data.data.map(async (asset: IPAAsset) => {
+          try {
+            const metadataResponse = await fetch(asset.nftMetadata.tokenUri);
+            if (metadataResponse.ok) {
+              const metadata = await metadataResponse.json();
+              asset.nftMetadata.imageUrl = metadata.image;
+              asset.nftMetadata.name = metadata.name;
+            }
+          } catch (err) {
+            console.error(`Error fetching metadata for token ${asset.nftMetadata.tokenId}:`, err);
+          }
+          return asset;
+        })
+      );
+
+      setIpaAssets(assetsWithImages);
       setLoading(false);
     } catch (error: any) {
       console.error('Error fetching IPA assets:', error);
@@ -89,31 +121,17 @@ const IPAAssetsList: React.FC = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {ipaAssets.map((asset) => (
-        <div key={asset.id} className="bg-white shadow rounded p-4">
+        <div
+          key={asset.id}
+          className="bg-white shadow rounded p-4 cursor-pointer"
+          onClick={() => router.push(`/my-ip-assets/${asset.id}`)}
+        >
           <img
             src={asset.nftMetadata.imageUrl}
             alt={asset.nftMetadata.name}
             className="w-full h-48 object-cover rounded mb-4"
           />
           <h2 className="text-xl font-bold mb-2">{asset.nftMetadata.name}</h2>
-          <p className="text-gray-700 mb-2">Token ID: {asset.nftMetadata.tokenId}</p>
-          <p className="text-gray-700 mb-2">Contract: {asset.nftMetadata.tokenContract}</p>
-          <a
-            href={asset.nftMetadata.tokenUri}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline"
-          >
-            More about the token
-          </a>
-          <a
-            href={`https://explorer.story.foundation/ipa/${asset.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline block mt-2"
-          >
-            View on Story Explorer
-          </a>
         </div>
       ))}
     </div>
