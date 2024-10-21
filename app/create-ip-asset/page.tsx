@@ -5,7 +5,6 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useWalletClient } from 'wagmi';
 import { useIpAsset, PIL_TYPE, useNftClient } from '@story-protocol/react-sdk';
 import { createHash } from 'crypto';
-import Nav from '../../components/Nav';
 
 const CreateIpaPage: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -74,7 +73,6 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
-  // Новая функция для загрузки файла на IPFS
   const uploadFileToIPFS = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -235,7 +233,6 @@ const CreateIpaPage: React.FC = () => {
 
   return (
     <div>
-      <Nav />
       <div className="flex justify-end mb-4">
         <ConnectButton />
       </div>

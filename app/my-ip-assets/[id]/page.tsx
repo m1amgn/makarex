@@ -1,7 +1,8 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import Nav from '@/components/Nav';
+import Image from 'next/image';
+
 
 interface PageProps {
     params: {
@@ -9,7 +10,7 @@ interface PageProps {
     };
 }
 
-interface IPAAssetDetails {
+interface IPAssetDetails {
     id: string;
     nftMetadata: {
         name: string;
@@ -28,7 +29,10 @@ interface AssetMetadata {
         title: string;
         description: string;
         watermarkImg: string;
-        attributes: string;
+        attributes: Array<{
+            key: string;
+            value: string;
+        }>;
     };
     nftMetadataHash: string;
     nftTokenUri: string;
@@ -45,9 +49,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 const AssetDetailsPage = async ({ params }: PageProps) => {
     const { id } = params;
 
-    const fetchAssetData = async (): Promise<IPAAssetDetails | null> => {
+    const fetchAssetData = async (): Promise<IPAssetDetails | null> => {
         try {
-            // Опции для запроса
             const options = {
                 method: 'GET',
                 headers: {
@@ -65,10 +68,7 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
             }
 
             const data = await response.json();
-
             const assetData = data.data;
-
-            console.log(`Asset Data: ${assetData.id}, ${assetData.nftMetadata.name}`);
 
             if (assetData && assetData.id) {
                 return assetData;
@@ -82,7 +82,6 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
 
     const fetchAssetMetadata = async (): Promise<AssetMetadata | null> => {
         try {
-            // Опции для запроса
             const options = {
                 method: 'GET',
                 headers: {
@@ -100,8 +99,6 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
             }
 
             const data = await response.json();
-
-            console.log(`Metadata: ${data.id}, ${data.metadataJson.title}`);
 
             if (data && data.id) {
                 return data;
@@ -121,14 +118,15 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
 
     return (
         <div className="container mx-auto p-8">
-            <Nav />
             <div className="bg-white shadow rounded p-8">
                 <h1 className="text-3xl font-bold mb-6">Asset Details</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <img
+                        <Image
                             src={assetData.nftMetadata.imageUrl}
                             alt={assetData.nftMetadata.name}
+                            width={200}
+                            height={200}
                             className="w-full h-auto object-cover rounded mb-4"
                         />
                         <h2 className="text-2xl font-bold mb-2">{assetData.nftMetadata.name}</h2>
@@ -176,7 +174,14 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                                         <strong>Watermark Image:</strong> {assetMetadata.metadataJson.watermarkImg}
                                     </li>
                                     <li>
-                                        <strong>Attributes:</strong> {assetMetadata.metadataJson.attributes}
+                                        <strong>Attributes:</strong>
+                                        <ul className="list-disc list-inside ml-4">
+                                            {assetMetadata.metadataJson.attributes.map((attr, index) => (
+                                                <li key={index}>
+                                                    <strong>{attr.key}:</strong> {attr.value}
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </li>
                                 </ul>
                                 <p className="mb-2 mt-4">

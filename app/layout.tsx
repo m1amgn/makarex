@@ -1,8 +1,7 @@
-// layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
 import { PropsWithChildren } from 'react';
-import Web3Providers from '@/components/Web3Providers';
+import Nav from '../components/Nav';
 
 export const metadata: Metadata = {
   title: 'test-vel',
@@ -13,7 +12,8 @@ export default function RootLayout({ children }: PropsWithChildren) {
   return (
     <html lang="ru">
       <body>
-        <Web3Providers>{children}</Web3Providers>
+        <Nav />
+        {children}
       </body>
     </html>
   );

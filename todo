@@ -1,3 +1,5 @@
+Fix bug with attributes visualisation and creating attributes in IPA
+
 Learn:
 - about fields of metadata
 - about attributes
@@ -7,7 +9,7 @@ Learn:
 
 Make new form depends on information
 
-Fix bug with attributes visualisation
+
 
 Make new visualisation page
 

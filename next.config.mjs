@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+    images: {
+        domains: ['ipfs.io', 'picsum.photos'],
+      },
+};
 
 export default nextConfig;

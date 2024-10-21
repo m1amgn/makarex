@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import "@rainbow-me/rainbowkit/styles.css";
 import { ConnectButton, getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";

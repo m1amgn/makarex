@@ -1,18 +1,11 @@
-'use client';
-
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-import Nav from '../components/Nav';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useWalletClient } from 'wagmi';
-import { useIpAsset, PIL_TYPE } from '@story-protocol/react-sdk';
-import { createHash } from 'crypto';
-
+import React from 'react';
 
 const HomePage: React.FC = () => {
-    return (
-    <div>    
-      <Nav />
-    <h1>MAIN PAGE</h1>
+  return (
+    <div>
+      <div className="min-h-screen bg-gray-100 p-8">
+        <h1 className="text-3xl font-bold text-center mb-8">MAIN PAGE</h1>
+      </div>
     </div>
   );
 };

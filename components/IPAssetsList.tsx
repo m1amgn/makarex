@@ -1,10 +1,11 @@
-// components/IPAAssetsList.tsx
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-interface IPAAsset {
+interface IPAsset {
   id: string;
   nftMetadata: {
     name: string;
@@ -15,9 +16,9 @@ interface IPAAsset {
   };
 }
 
-const IPAAssetsList: React.FC = () => {
+const IPAssetsList: React.FC = () => {
   const { address, isConnected } = useAccount();
-  const [ipaAssets, setIpaAssets] = useState<IPAAsset[]>([]);
+  const [ipAssets, setIpAssets] = useState<IPAsset[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nftContract, setNftContract] = useState<string | null>(null);
@@ -38,7 +39,7 @@ const IPAAssetsList: React.FC = () => {
       const data = await response.json();
       if (data.nftContract) {
         setNftContract(data.nftContract);
-        fetchIPAAssets(data.nftContract);
+        fetchIPAssets(data.nftContract);
       } else {
         setError('No NFT collection found for your address.');
         setLoading(false);
@@ -50,7 +51,7 @@ const IPAAssetsList: React.FC = () => {
     }
   };
 
-  const fetchIPAAssets = async (nftContractAddress: string) => {
+  const fetchIPAssets = async (nftContractAddress: string) => {
     try {
       const options = {
         method: 'POST',
@@ -74,7 +75,7 @@ const IPAAssetsList: React.FC = () => {
       const data = await response.json();
 
       const assetsWithImages = await Promise.all(
-        data.data.map(async (asset: IPAAsset) => {
+        data.data.map(async (asset: IPAsset) => {
           try {
             const metadataResponse = await fetch(asset.nftMetadata.tokenUri);
             if (metadataResponse.ok) {
@@ -89,10 +90,10 @@ const IPAAssetsList: React.FC = () => {
         })
       );
 
-      setIpaAssets(assetsWithImages);
+      setIpAssets(assetsWithImages);
       setLoading(false);
     } catch (error: any) {
-      console.error('Error fetching IPA assets:', error);
+      console.error('Error fetching IP assets:', error);
       setError(error.message);
       setLoading(false);
     }
@@ -114,22 +115,24 @@ const IPAAssetsList: React.FC = () => {
     );
   }
 
-  if (ipaAssets.length === 0) {
+  if (ipAssets.length === 0) {
     return <div className="text-center p-8">No IP assets found.</div>;
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {ipaAssets.map((asset) => (
+      {ipAssets.map((asset) => (
         <div
           key={asset.id}
           className="bg-white shadow rounded p-4 cursor-pointer"
           onClick={() => router.push(`/my-ip-assets/${asset.id}`)}
         >
-          <img
+          <Image
             src={asset.nftMetadata.imageUrl}
             alt={asset.nftMetadata.name}
             className="w-full h-48 object-cover rounded mb-4"
+            width={200}
+            height={200}
           />
           <h2 className="text-xl font-bold mb-2">{asset.nftMetadata.name}</h2>
         </div>
@@ -138,4 +141,4 @@ const IPAAssetsList: React.FC = () => {
   );
 };
 
-export default IPAAssetsList;
+export default IPAssetsList;
