@@ -17,13 +17,13 @@ const CreateIpaPage: React.FC = () => {
     description: string;
     imageFile: File | null;
     watermarkImg: string;
-    attributes: string;
+    attributes: Array<{ key: string; value: string }>;
   }>({
     title: '',
     description: '',
     imageFile: null,
     watermarkImg: '',
-    attributes: '',
+    attributes: [{ key: '', value: '' }],
   });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -108,6 +108,36 @@ const CreateIpaPage: React.FC = () => {
     setCollectionData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const addAttribute = () => {
+    setFormData((prev) => ({
+      ...prev,
+      attributes: [...prev.attributes, { key: '', value: '' }],
+    }));
+  };
+
+  const removeAttribute = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      attributes: prev.attributes.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleAttributeChange = (
+    index: number,
+    field: 'key' | 'value',
+    value: string
+  ) => {
+    setFormData((prev) => {
+      const updatedAttributes = prev.attributes.map((attr, i) => {
+        if (i === index) {
+          return { ...attr, [field]: value };
+        }
+        return attr;
+      });
+      return { ...prev, attributes: updatedAttributes };
+    });
+  };
+
   const updateNftOwners = async (address: string, nftContract: string) => {
     try {
       const response = await fetch('/api/get_nft_contract_by_address', {
@@ -183,11 +213,16 @@ const CreateIpaPage: React.FC = () => {
 
       const imageIpfsHash = await uploadFileToIPFS(formData.imageFile);
 
+      const formattedAttributes = formData.attributes.map((attr) => ({
+        key: attr.key,
+        value: attr.value,
+      }));
+
       const ipMetadata = {
         title: formData.title,
         description: formData.description,
         watermarkImg: formData.watermarkImg,
-        attributes: formData.attributes,
+        attributes: formattedAttributes,
       };
 
       const nftMetadata = {
@@ -331,15 +366,44 @@ const CreateIpaPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Attributes (format: key1:value1,key2:value2)
+                    Attributes
                   </label>
-                  <input
-                    name="attributes"
-                    value={formData.attributes}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
+                  {formData.attributes.map((attr, index) => (
+                    <div key={index} className="flex items-center space-x-2 mb-2">
+                      <input
+                        type="text"
+                        placeholder="Key"
+                        value={attr.key}
+                        onChange={(e) => handleAttributeChange(index, 'key', e.target.value)}
+                        required
+                        className="flex-1 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Value"
+                        value={attr.value}
+                        onChange={(e) => handleAttributeChange(index, 'value', e.target.value)}
+                        required
+                        className="flex-1 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                      {formData.attributes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeAttribute(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addAttribute}
+                    className="mt-2 flex items-center text-indigo-600 hover:underline"
+                  >
+                    + Add Attribute
+                  </button>
                 </div>
                 <button
                   type="submit"

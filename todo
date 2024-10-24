@@ -1,5 +1,3 @@
-Fix bug with attributes visualisation and creating attributes in IPA
-
 Learn:
 - about fields of metadata
 - about attributes
@@ -8,8 +6,6 @@ Learn:
 - about correction of rules after mint
 
 Make new form depends on information
-
-
 
 Make new visualisation page
 

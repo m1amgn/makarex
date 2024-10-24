@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
 
-
 interface PageProps {
     params: {
         id: string;
@@ -37,6 +36,10 @@ interface AssetMetadata {
     nftMetadataHash: string;
     nftTokenUri: string;
     registrationDate: string;
+}
+
+interface TokenUriMetadata {
+    image: string;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -116,19 +119,51 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
         return notFound();
     }
 
+    const fetchTokenUriMetadata = async (tokenUri: string): Promise<TokenUriMetadata | null> => {
+        try {
+            const response = await fetch(tokenUri);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Error fetching token URI metadata: ${response.status} ${response.statusText}`, errorText);
+                throw new Error('Error fetching token URI metadata');
+            }
+
+            const metadata = await response.json();
+            if (metadata && metadata.image) {
+                return {
+                    image: metadata.image,
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching token URI metadata:', error);
+            return null;
+        }
+    };
+
+    const tokenUriMetadata = assetData.nftMetadata.tokenUri ? await fetchTokenUriMetadata(assetData.nftMetadata.tokenUri) : null;
+
+    if (tokenUriMetadata) {
+        assetData.nftMetadata.imageUrl = tokenUriMetadata.image;
+    }
+
     return (
         <div className="container mx-auto p-8">
             <div className="bg-white shadow rounded p-8">
                 <h1 className="text-3xl font-bold mb-6">Asset Details</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
+                    <div className="relative w-full h-48 md:h-64 lg:h-80">
                         <Image
                             src={assetData.nftMetadata.imageUrl}
                             alt={assetData.nftMetadata.name}
-                            width={200}
-                            height={200}
-                            className="w-full h-auto object-cover rounded mb-4"
+                            fill
+                            className="object-contain object-left rounded mb-4"
+                            sizes="(max-width: 768px) 100vw,
+                                   (max-width: 1200px) 50vw,
+                                   33vw"
                         />
+                    </div>
+                    <div>
                         <h2 className="text-2xl font-bold mb-2">{assetData.nftMetadata.name}</h2>
                         <p className="text-gray-700 mb-2">Token ID: {assetData.nftMetadata.tokenId}</p>
                         <p className="text-gray-700 mb-2">Contract: {assetData.nftMetadata.tokenContract}</p>
@@ -141,7 +176,7 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                             View on Story Explorer
                         </a>
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                         <h3 className="text-xl font-bold mb-4">Additional Metadata</h3>
                         {assetMetadata ? (
                             <div>
@@ -175,13 +210,17 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                                     </li>
                                     <li>
                                         <strong>Attributes:</strong>
-                                        <ul className="list-disc list-inside ml-4">
-                                            {assetMetadata.metadataJson.attributes.map((attr, index) => (
-                                                <li key={index}>
-                                                    <strong>{attr.key}:</strong> {attr.value}
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        {assetMetadata.metadataJson.attributes && assetMetadata.metadataJson.attributes.length > 0 ? (
+                                            <ul className="list-disc list-inside ml-4">
+                                                {assetMetadata.metadataJson.attributes.map((attr, index) => (
+                                                    <li key={index}>
+                                                        <strong>{attr.key}:</strong> {attr.value}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p>No attributes available.</p>
+                                        )}
                                     </li>
                                 </ul>
                                 <p className="mb-2 mt-4">
