@@ -16,14 +16,20 @@ const CreateIpaPage: React.FC = () => {
     title: string;
     description: string;
     imageFile: File | null;
-    watermarkImg: string;
     attributes: Array<{ key: string; value: string }>;
+    commercialLicense: boolean;
+    revenueShare: string;
+    mintFee: string;
+    currency: string;
   }>({
     title: '',
     description: '',
     imageFile: null,
-    watermarkImg: '',
     attributes: [{ key: '', value: '' }],
+    commercialLicense: false,
+    revenueShare: '',
+    mintFee: '',
+    currency: '',
   });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -93,9 +99,11 @@ const CreateIpaPage: React.FC = () => {
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target as HTMLInputElement;
 
-    if (name === 'imageFile') {
+    if (type === 'checkbox') {
+      setFormData((prev) => ({ ...prev, [name]: checked }));
+    } else if (name === 'imageFile') {
       const file = (e.target as HTMLInputElement).files?.[0] || null;
       setFormData((prev) => ({ ...prev, imageFile: file }));
     } else {
@@ -221,7 +229,6 @@ const CreateIpaPage: React.FC = () => {
       const ipMetadata = {
         title: formData.title,
         description: formData.description,
-        watermarkImg: formData.watermarkImg,
         attributes: formattedAttributes,
       };
 
@@ -243,17 +250,53 @@ const CreateIpaPage: React.FC = () => {
         .update(JSON.stringify(nftMetadata))
         .digest('hex')}`;
 
-      const response = await mintAndRegisterIpAssetWithPilTerms({
-        nftContract: nftContract as `0x${string}`,
-        pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
-        ipMetadata: {
-          ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
-          ipMetadataHash: ipHash as `0x${string}`,
-          nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
-          nftMetadataHash: nftHash as `0x${string}`,
-        },
-        txOptions: { waitForTransaction: true },
-      });
+      // Подготовка данных для отправки в зависимости от состояния чекбокса
+      let response;
+
+      if (formData.commercialLicense) {
+        // Преобразование строковых значений в числа
+        const revenueShare = parseInt(formData.revenueShare, 10);
+        const mintFee = parseInt(formData.mintFee, 10);
+
+        if (isNaN(revenueShare) || isNaN(mintFee)) {
+          setErrorMessage('Revenue Share и Mint Fee должны быть валидными числами.');
+          setLoading(false);
+          return;
+        }
+
+        if (!formData.currency) {
+          setErrorMessage('Пожалуйста, введите адрес токена валюты.');
+          setLoading(false);
+          return;
+        }
+
+        response = await mintAndRegisterIpAssetWithPilTerms({
+          nftContract: nftContract as `0x${string}`,
+          pilType: PIL_TYPE.COMMERCIAL_REMIX,
+          commercialRevShare: revenueShare, // number
+          mintingFee: mintFee, // number
+          currency: formData.currency as `0x${string}`, // string
+          ipMetadata: {
+            ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
+            ipMetadataHash: ipHash as `0x${string}`,
+            nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
+            nftMetadataHash: nftHash as `0x${string}`,
+          },
+          txOptions: { waitForTransaction: true },
+        });
+      } else {
+        response = await mintAndRegisterIpAssetWithPilTerms({
+          nftContract: nftContract as `0x${string}`,
+          pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
+          ipMetadata: {
+            ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
+            ipMetadataHash: ipHash as `0x${string}`,
+            nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
+            nftMetadataHash: nftHash as `0x${string}`,
+          },
+          txOptions: { waitForTransaction: true },
+        });
+      }
 
       console.log('Response:', response);
 
@@ -267,154 +310,193 @@ const CreateIpaPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
       <div className="flex justify-end mb-4">
         <ConnectButton />
       </div>
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-md w-full bg-white p-8 rounded shadow mx-auto">
-          {errorMessage && (
-            <div className="mb-4 p-3 text-red-700 bg-red-100 rounded">
-              {errorMessage}
-            </div>
-          )}
-          {!isConnected || !address ? (
-            <p className="text-center">Please connect your wallet to proceed.</p>
-          ) : loading ? (
-            <p className="text-center">Processing...</p>
-          ) : needsCollection ? (
-            <>
-              <h1 className="text-2xl font-bold mb-6 text-center">Create NFT Collection</h1>
-              <form onSubmit={handleCollectionSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
-                  <input
-                    name="name"
-                    value={collectionData.name}
-                    onChange={handleCollectionChange}
-                    required
-                    className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Symbol</label>
-                  <input
-                    name="symbol"
-                    value={collectionData.symbol}
-                    onChange={handleCollectionChange}
-                    required
-                    className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
+      <div className="max-w-lg w-full mx-auto bg-white rounded-lg shadow-lg p-6">
+
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+            {errorMessage}
+          </div>
+        )}
+        {!isConnected || !address ? (
+          <p className="text-center text-gray-500">Please connect your wallet to proceed.</p>
+        ) : loading ? (
+          <p className="text-center text-gray-500">Processing...</p>
+        ) : needsCollection ? (
+          <>
+            <h1 className="text-3xl font-semibold text-center mb-8 text-indigo-700">Create NFT Collection</h1>
+            <form onSubmit={handleCollectionSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <input
+                  name="name"
+                  value={collectionData.name}
+                  onChange={handleCollectionChange}
+                  required
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Symbol</label>
+                <input
+                  name="symbol"
+                  value={collectionData.symbol}
+                  onChange={handleCollectionChange}
+                  required
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-2 px-4 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
+              >
+                Create Collection
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">Register IP Asset</h1>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <input
+                  name="title"
+                  placeholder="Title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <textarea
+                  name="description"
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  required
+                  rows={4}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Attributes</label>
+                {formData.attributes.map((attr, index) => (
+                  <div key={index} className="flex items-center space-x-3 mb-3">
+                    <input
+                      type="text"
+                      placeholder="Key"
+                      value={attr.key}
+                      onChange={(e) => handleAttributeChange(index, 'key', e.target.value)}
+                      required
+                      className="w-1/2 rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      value={attr.value}
+                      onChange={(e) => handleAttributeChange(index, 'value', e.target.value)}
+                      required
+                      className="w-1/2 rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                    {formData.attributes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeAttribute(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                ))}
                 <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  type="button"
+                  onClick={addAttribute}
+                  className="text-grey-400 text-sm font-medium hover:text-indigo-600"
                 >
-                  Create Collection
+                  + Add Attributes
                 </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold mb-6 text-center">Register IP Asset</h1>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Title</label>
-                  <input
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    required
-                    rows={4}
-                    className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Upload Image
-                  </label>
-                  <input
-                    type="file"
-                    name="imageFile"
-                    accept="image/*"
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    URL Watermark Image
-                  </label>
-                  <input
-                    name="watermarkImg"
-                    value={formData.watermarkImg}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Attributes
-                  </label>
-                  {formData.attributes.map((attr, index) => (
-                    <div key={index} className="flex items-center space-x-2 mb-2">
-                      <input
-                        type="text"
-                        placeholder="Key"
-                        value={attr.key}
-                        onChange={(e) => handleAttributeChange(index, 'key', e.target.value)}
-                        required
-                        className="flex-1 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Value"
-                        value={attr.value}
-                        onChange={(e) => handleAttributeChange(index, 'value', e.target.value)}
-                        required
-                        className="flex-1 rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                      {formData.attributes.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeAttribute(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          &times;
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addAttribute}
-                    className="mt-2 flex items-center text-indigo-600 hover:underline"
-                  >
-                    + Add Attribute
-                  </button>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  Submit
-                </button>
-              </form>
-            </>
-          )}
-        </div>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="commercialLicense"
+                  name="commercialLicense"
+                  checked={formData.commercialLicense}
+                  onChange={handleChange}
+                  className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                />
+                <label htmlFor="commercialLicense" className="ml-3 text-sm font-medium text-gray-700">
+                  Commercial License
+                </label>
+              </div>
+              {formData.commercialLicense && (
+                <>
+                  <div>
+                    <input
+                      type="number"
+                      name="revenueShare"
+                      placeholder='% Revenue'
+                      value={formData.revenueShare}
+                      onChange={handleChange}
+                      required
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      name="mintFee"
+                      placeholder='Fee for mint'
+                      value={formData.mintFee}
+                      onChange={handleChange}
+                      required
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      name="currency"
+                      placeholder='Currency (Token Address)'
+                      value={formData.currency}
+                      onChange={handleChange}
+                      required
+                      pattern="^0x[a-fA-F0-9]{40}$"
+                      title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                  </div>
+                </>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mt-5">Upload Image</label>
+                <input
+                  type="file"
+                  name="imageFile"
+                  accept="image/*"
+                  onChange={handleChange}
+                  required
+                  className="mt-2 w-full"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3 px-4 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
+              >
+                Submit
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

@@ -5,17 +5,19 @@ import React from 'react';
 
 const Nav: React.FC = () => {
     return (
-        <nav className="bg-white shadow p-4 mb-8">
-            <div className="flex justify-center space-x-4">
-                <Link href="/" className="text-indigo-600 hover:underline">
-                    Main
-                </Link>
-                <Link href="/my-ip-assets" className="text-indigo-600 hover:underline">
-                    My IP Assets
-                </Link>
-                <Link href="/create-ip-asset" className="text-indigo-600 hover:underline">
-                    Create IP Asset
-                </Link>
+        <nav className="bg-gray-600 shadow-lg">
+            <div className="container mx-auto px-4">
+                <div className="flex justify-center space-x-8 py-4">
+                    <Link href="/" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
+                        Main
+                    </Link>
+                    <Link href="/my-ip-assets" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
+                        My IP Assets
+                    </Link>
+                    <Link href="/create-ip-asset" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
+                        Create IP Asset
+                    </Link>
+                </div>
             </div>
         </nav>
     );

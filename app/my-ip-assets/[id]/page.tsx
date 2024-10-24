@@ -27,7 +27,6 @@ interface AssetMetadata {
     metadataJson: {
         title: string;
         description: string;
-        watermarkImg: string;
         attributes: Array<{
             key: string;
             value: string;
@@ -204,9 +203,6 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                                     </li>
                                     <li>
                                         <strong>Description:</strong> {assetMetadata.metadataJson.description}
-                                    </li>
-                                    <li>
-                                        <strong>Watermark Image:</strong> {assetMetadata.metadataJson.watermarkImg}
                                     </li>
                                     <li>
                                         <strong>Attributes:</strong>
