@@ -1,9 +1,3 @@
-Page [id] separated with component 'use client' which download images. Maybe this component will be used in my-ip-assets too
-
-Add choose between commercial_use and commercial_remix
-
-Add information about license and difference between use and remix
-
 Add choose currence and get currence address from the object in utils.
 
 Add view license information in my-ip-assets/id. If there is no license add button to add commercial license

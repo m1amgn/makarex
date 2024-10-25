@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import ImageLoader from '@/components/ImageLoader';
 
 interface IPAsset {
   id: string;
@@ -73,24 +73,8 @@ const IPAssetsList: React.FC = () => {
       }
 
       const data = await response.json();
-
-      const assetsWithImages = await Promise.all(
-        data.data.map(async (asset: IPAsset) => {
-          try {
-            const metadataResponse = await fetch(asset.nftMetadata.tokenUri);
-            if (metadataResponse.ok) {
-              const metadata = await metadataResponse.json();
-              asset.nftMetadata.imageUrl = metadata.image;
-              asset.nftMetadata.name = metadata.name;
-            }
-          } catch (err) {
-            console.error(`Error fetching metadata for token ${asset.nftMetadata.tokenId}:`, err);
-          }
-          return asset;
-        })
-      );
-
-      setIpAssets(assetsWithImages);
+      
+      setIpAssets(data.data);
       setLoading(false);
     } catch (error: any) {
       console.error('Error fetching IP assets:', error);
@@ -125,15 +109,9 @@ const IPAssetsList: React.FC = () => {
         <div
           key={asset.id}
           className="bg-white shadow rounded p-4 cursor-pointer"
-          onClick={() => router.push(`/my-ip-assets/${asset.id}`)}
+          onClick={() => router.push(`/my-ipa/${asset.id}`)}
         >
-          <Image
-            src={asset.nftMetadata.imageUrl}
-            alt={asset.nftMetadata.name}
-            className="w-full h-48 object-cover rounded mb-4"
-            width={200}
-            height={200}
-          />
+          <ImageLoader tokenUri={asset.nftMetadata.tokenUri} altText={asset.nftMetadata.name} />
           <h2 className="text-xl font-bold mb-2">{asset.nftMetadata.name}</h2>
         </div>
       ))}

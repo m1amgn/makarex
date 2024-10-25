@@ -11,11 +11,11 @@ const Nav: React.FC = () => {
                     <Link href="/" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
                         Main
                     </Link>
-                    <Link href="/my-ip-assets" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
-                        My IP Assets
+                    <Link href="/my-ipa" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
+                        My IPA
                     </Link>
-                    <Link href="/create-ip-asset" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
-                        Create IP Asset
+                    <Link href="/register-ipa" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
+                        Register IPA
                     </Link>
                 </div>
             </div>

@@ -1,9 +1,8 @@
-// app/my-ip-assets/[id]/page.tsx
-
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import ImageLoader from '@/components/ImageLoader';
+import LicenseDetails from '@/components/LicenseDetails';
 
 interface PageProps {
     params: {
@@ -124,7 +123,6 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                     {assetData.nftMetadata.tokenUri && (
                         <ImageLoader tokenUri={assetData.nftMetadata.tokenUri} altText={assetData.nftMetadata.name} />
                     )}
-
                     <div>
                         <h2 className="text-2xl font-bold mb-2">{assetData.nftMetadata.name}</h2>
                         <p className="text-gray-700 mb-2">Token ID: {assetData.nftMetadata.tokenId}</p>
@@ -205,6 +203,9 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                         )}
                     </div>
                 </div>
+
+                {/* Добавление компонента LicenseDetails для отображения лицензий */}
+                <LicenseDetails ipId={assetData.id} />
             </div>
         </div>
     );

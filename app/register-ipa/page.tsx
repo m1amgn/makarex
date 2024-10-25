@@ -3,7 +3,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient } from "wagmi";
-import { useIpAsset, PIL_TYPE, useNftClient } from "@story-protocol/react-sdk";
+import { useIpAsset, PIL_TYPE, useNftClient, useLicense } from "@story-protocol/react-sdk";
 import { createHash } from "crypto";
 
 const CreateIpaPage: React.FC = () => {
@@ -35,9 +35,7 @@ const CreateIpaPage: React.FC = () => {
   });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [nftContract, setNftContract] = useState<string | null | undefined>(
-    null
-  );
+  const [nftContract, setNftContract] = useState<string | null | undefined>(null);
   const [needsCollection, setNeedsCollection] = useState<boolean>(false);
   const [collectionData, setCollectionData] = useState<{
     name: string;
@@ -269,9 +267,12 @@ const CreateIpaPage: React.FC = () => {
         formData.licenseType === "COMMERCIAL_USE"
       ) {
         const mintFee = parseInt(formData.mintFee, 10);
+        const revenueShare = parseInt(formData.revenueShare, 10);
 
-        if (isNaN(mintFee)) {
-          setErrorMessage("Mint Fee должен быть валидным числом.");
+        if (isNaN(mintFee) || isNaN(revenueShare)) {
+          setErrorMessage(
+            "Mint Fee и Revenue Share должны быть валидными числами."
+          );
           setLoading(false);
           return;
         }
@@ -286,6 +287,7 @@ const CreateIpaPage: React.FC = () => {
           nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_USE,
           mintingFee: mintFee,
+          commercialRevShare: revenueShare,
           currency: formData.currency as `0x${string}`,
           ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
@@ -497,6 +499,9 @@ const CreateIpaPage: React.FC = () => {
               </div>
               {formData.commercialLicense && (
                 <div className="mt-4">
+                  <p className="text-sm text-red-700 mb-6">
+                    Select the standard license terms or uncheck Commercial License and create custom terms after registering your asset. <strong>You can create custom terms on your asset's My IPA page.</strong>
+                  </p>
                   <div className="flex space-x-4">
                     <label
                       className="flex items-center"
@@ -541,6 +546,21 @@ const CreateIpaPage: React.FC = () => {
                       </span>
                     </label>
                   </div>
+                  {formData.licenseType && (
+                    <div className="mt-2">
+                      <input
+                        type="number"
+                        name="revenueShare"
+                        placeholder="% Revenue"
+                        value={formData.revenueShare}
+                        onChange={handleChange}
+                        required
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                        min="0"
+                        max="100"
+                      />
+                    </div>
+                  )}
                   {formData.licenseType === "COMMERCIAL_USE" && (
                     <div>
                       <input
@@ -556,34 +576,21 @@ const CreateIpaPage: React.FC = () => {
                       />
                     </div>
                   )}
-                  {formData.licenseType === "COMMERCIAL_REMIX" && (
+                  {formData.licenseType && (
                     <div>
                       <input
-                        type="number"
-                        name="revenueShare"
-                        placeholder="% Revenue"
-                        value={formData.revenueShare}
+                        type="text"
+                        name="currency"
+                        placeholder="Currency (Token Address)"
+                        value={formData.currency}
                         onChange={handleChange}
                         required
+                        pattern="^0x[a-fA-F0-9]{40}$"
+                        title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
                         className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                        min="0"
-                        max="100"
                       />
                     </div>
                   )}
-                  <div>
-                    <input
-                      type="text"
-                      name="currency"
-                      placeholder="Currency (Token Address)"
-                      value={formData.currency}
-                      onChange={handleChange}
-                      required
-                      pattern="^0x[a-fA-F0-9]{40}$"
-                      title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
-                      className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
                 </div>
               )}
               <div>
