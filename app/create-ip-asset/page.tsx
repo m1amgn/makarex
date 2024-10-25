@@ -478,7 +478,7 @@ const CreateIpaPage: React.FC = () => {
                 </>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mt-5">Upload Image</label>
+                <label className="block text-sm font-medium text-gray-700 mt-5">Upload Image (.png, .jpeg, .jpg, .webp)</label>
                 <input
                   type="file"
                   name="imageFile"
