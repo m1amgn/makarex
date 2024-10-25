@@ -39,6 +39,7 @@ interface AssetMetadata {
 
 interface TokenUriMetadata {
     image: string;
+    name: string
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -128,9 +129,10 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
             }
 
             const metadata = await response.json();
-            if (metadata && metadata.image) {
+            if (metadata && metadata.image && metadata.name) {
                 return {
                     image: metadata.image,
+                    name: metadata.name
                 };
             }
             return null;
@@ -144,6 +146,7 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
 
     if (tokenUriMetadata) {
         assetData.nftMetadata.imageUrl = tokenUriMetadata.image;
+        assetData.nftMetadata.name = tokenUriMetadata.name;
     }
 
     return (
