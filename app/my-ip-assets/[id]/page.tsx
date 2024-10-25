@@ -1,7 +1,9 @@
+// app/my-ip-assets/[id]/page.tsx
+
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import Image from 'next/image';
+import ImageLoader from '@/components/ImageLoader';
 
 interface PageProps {
     params: {
@@ -35,11 +37,6 @@ interface AssetMetadata {
     nftMetadataHash: string;
     nftTokenUri: string;
     registrationDate: string;
-}
-
-interface TokenUriMetadata {
-    image: string;
-    name: string
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -119,52 +116,15 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
         return notFound();
     }
 
-    const fetchTokenUriMetadata = async (tokenUri: string): Promise<TokenUriMetadata | null> => {
-        try {
-            const response = await fetch(tokenUri);
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`Error fetching token URI metadata: ${response.status} ${response.statusText}`, errorText);
-                throw new Error('Error fetching token URI metadata');
-            }
-
-            const metadata = await response.json();
-            if (metadata && metadata.image && metadata.name) {
-                return {
-                    image: metadata.image,
-                    name: metadata.name
-                };
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching token URI metadata:', error);
-            return null;
-        }
-    };
-
-    const tokenUriMetadata = assetData.nftMetadata.tokenUri ? await fetchTokenUriMetadata(assetData.nftMetadata.tokenUri) : null;
-
-    if (tokenUriMetadata) {
-        assetData.nftMetadata.imageUrl = tokenUriMetadata.image;
-        assetData.nftMetadata.name = tokenUriMetadata.name;
-    }
-
     return (
         <div className="container mx-auto p-8">
             <div className="bg-white shadow rounded p-8">
                 <h1 className="text-3xl font-bold mb-6">Asset Details</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="relative w-full h-48 md:h-64 lg:h-80">
-                        <Image
-                            src={assetData.nftMetadata.imageUrl}
-                            alt={assetData.nftMetadata.name}
-                            fill
-                            className="object-contain object-left rounded mb-4"
-                            sizes="(max-width: 768px) 100vw,
-                                   (max-width: 1200px) 50vw,
-                                   33vw"
-                        />
-                    </div>
+                    {assetData.nftMetadata.tokenUri && (
+                        <ImageLoader tokenUri={assetData.nftMetadata.tokenUri} altText={assetData.nftMetadata.name} />
+                    )}
+
                     <div>
                         <h2 className="text-2xl font-bold mb-2">{assetData.nftMetadata.name}</h2>
                         <p className="text-gray-700 mb-2">Token ID: {assetData.nftMetadata.tokenId}</p>
