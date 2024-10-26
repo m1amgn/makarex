@@ -3,14 +3,13 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient } from "wagmi";
-import { useIpAsset, PIL_TYPE, useNftClient, useLicense } from "@story-protocol/react-sdk";
 import { createHash } from "crypto";
+import { StoryClient, StoryConfig, PIL_TYPE } from "@story-protocol/core-sdk";
+import { custom } from "viem";
 
 const CreateIpaPage: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { data: wallet } = useWalletClient();
-  const { mintAndRegisterIpAssetWithPilTerms } = useIpAsset();
-  const { createNFTCollection } = useNftClient();
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -46,6 +45,20 @@ const CreateIpaPage: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(false);
 
+  // Инициализация клиента StoryClient
+  function setupStoryClient(): StoryClient | null {
+    if (!wallet) return null;
+
+    const config: StoryConfig = {
+      wallet: wallet,
+      transport: custom(wallet.transport),
+      chainId: "iliad", // Используем ваш кастомный `iliad` чейн
+    };
+    const client = StoryClient.newClient(config);
+    return client;
+  }
+
+  // Загрузка контракта NFT по адресу пользователя
   useEffect(() => {
     const fetchNftContract = async () => {
       if (isConnected && address) {
@@ -69,6 +82,7 @@ const CreateIpaPage: React.FC = () => {
     fetchNftContract();
   }, [isConnected, address]);
 
+  // Функции загрузки файлов и JSON на IPFS
   const uploadJSONToIPFS = async (metadata: any): Promise<string> => {
     const response = await fetch("/api/upload_to_ipfs", {
       method: "POST",
@@ -103,6 +117,7 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
+  // Обработчики изменений формы
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -153,6 +168,7 @@ const CreateIpaPage: React.FC = () => {
     });
   };
 
+  // Обновление информации о владельцах NFT
   const updateNftOwners = async (address: string, nftContract: string) => {
     try {
       const response = await fetch("/api/get_nft_contract_by_address", {
@@ -172,6 +188,7 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
+  // Обработка создания новой коллекции NFT
   const handleCollectionSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -183,7 +200,14 @@ const CreateIpaPage: React.FC = () => {
     }
 
     try {
-      const newCollection = await createNFTCollection({
+      const client = setupStoryClient();
+      if (!client) {
+        setErrorMessage("Error initializing StoryClient.");
+        setLoading(false);
+        return;
+      }
+
+      const newCollection = await client.nftClient.createNFTCollection({
         name: collectionData.name,
         symbol: collectionData.symbol,
         txOptions: { waitForTransaction: true },
@@ -206,6 +230,7 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
+  // Обработка отправки формы регистрации IP-актива
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -218,6 +243,13 @@ const CreateIpaPage: React.FC = () => {
 
     if (!wallet) {
       setErrorMessage("Error: wallet not found. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    const client = setupStoryClient();
+    if (!client) {
+      setErrorMessage("Error initializing StoryClient.");
       setLoading(false);
       return;
     }
@@ -262,14 +294,14 @@ const CreateIpaPage: React.FC = () => {
 
       let response;
 
+      // Логика обработки типов лицензий
       if (
         formData.commercialLicense &&
         formData.licenseType === "COMMERCIAL_USE"
       ) {
         const mintFee = parseInt(formData.mintFee, 10);
-        const revenueShare = parseInt(formData.revenueShare, 10);
 
-        if (isNaN(mintFee) || isNaN(revenueShare)) {
+        if (isNaN(mintFee)) {
           setErrorMessage(
             "Mint Fee и Revenue Share должны быть валидными числами."
           );
@@ -283,11 +315,10 @@ const CreateIpaPage: React.FC = () => {
           return;
         }
 
-        response = await mintAndRegisterIpAssetWithPilTerms({
+        response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
           nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_USE,
           mintingFee: mintFee,
-          commercialRevShare: revenueShare,
           currency: formData.currency as `0x${string}`,
           ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
@@ -302,6 +333,7 @@ const CreateIpaPage: React.FC = () => {
         formData.licenseType === "COMMERCIAL_REMIX"
       ) {
         const revenueShare = parseInt(formData.revenueShare, 10);
+        const mintFee = parseInt(formData.mintFee, 10);
 
         if (isNaN(revenueShare)) {
           setErrorMessage("Revenue Share должен быть валидным числом.");
@@ -315,11 +347,11 @@ const CreateIpaPage: React.FC = () => {
           return;
         }
 
-        response = await mintAndRegisterIpAssetWithPilTerms({
+        response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
           nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_REMIX,
           commercialRevShare: revenueShare,
-          mintingFee: parseInt(formData.mintFee, 10),
+          mintingFee: mintFee,
           currency: formData.currency as `0x${string}`,
           ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
@@ -330,7 +362,7 @@ const CreateIpaPage: React.FC = () => {
           txOptions: { waitForTransaction: true },
         });
       } else {
-        response = await mintAndRegisterIpAssetWithPilTerms({
+        response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
           nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
           ipMetadata: {
@@ -373,9 +405,10 @@ const CreateIpaPage: React.FC = () => {
           <p className="text-center text-gray-500">Processing...</p>
         ) : needsCollection ? (
           <>
-            <h1 className="text-3xl font-semibold text-center mb-8 text-indigo-700">
+            <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">
               Create NFT Collection
             </h1>
+            <p className="text-center text-gray-500">Let's build your own NFT collection within which you can create and register your NFT assets.</p>
             <form onSubmit={handleCollectionSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -546,7 +579,7 @@ const CreateIpaPage: React.FC = () => {
                       </span>
                     </label>
                   </div>
-                  {formData.licenseType && (
+                  {formData.licenseType === "COMMERCIAL_REMIX" && (
                     <div className="mt-2">
                       <input
                         type="number"
@@ -561,7 +594,7 @@ const CreateIpaPage: React.FC = () => {
                       />
                     </div>
                   )}
-                  {formData.licenseType === "COMMERCIAL_USE" && (
+                  {formData.licenseType && (
                     <div>
                       <input
                         type="number"
