@@ -23,7 +23,6 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
   useEffect(() => {
     const fetchLicenses = async () => {
       try {
-        // Первый запрос для получения лицензий IP
         const options = {
           method: 'GET',
           headers: {
@@ -40,12 +39,10 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
 
         const licenseData = await response.json();
 
-        // Фильтрация лицензий: если licenseTermsId === 1, то это некоммерческая лицензия
         const commercialLicenses = licenseData.data.filter(
           (license: any) => license.licenseTermsId !== '0' && license.licenseTermsId !== '1'
         );
 
-        // Добавление некоммерческой лицензии, если она присутствует
         const nonCommercialLicense = licenseData.data.find((license: any) => license.licenseTermsId === '1');
 
         const licenseDetails = await Promise.all(
@@ -67,7 +64,6 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
           })
         );
 
-        // Добавление некоммерческой лицензии в список лицензий
         if (nonCommercialLicense) {
           licenseDetails.unshift({
             id: '1',
@@ -108,7 +104,7 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
       {licenses.map((license, index) => (
         <div key={index} className="bg-gray-100 p-4 rounded mb-4">
           <h4 className="text-lg font-semibold mb-2">
-            License ID: {license.id} {license.id === '1' && '(Non-Commercial)'}
+            License ID: {license.id} {license.id !== '1' && '(Commercial)'}
           </h4>
           <ul className="list-disc list-inside">
             {license.licenseTerms.map((term, termIndex) => (

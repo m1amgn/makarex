@@ -4,7 +4,7 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient } from "wagmi";
 import { createHash } from "crypto";
-import { StoryClient, StoryConfig, PIL_TYPE } from "@story-protocol/core-sdk";
+import { PIL_TYPE, StoryClient, StoryConfig } from "@story-protocol/core-sdk";
 import { custom } from "viem";
 
 const CreateIpaPage: React.FC = () => {
@@ -16,21 +16,11 @@ const CreateIpaPage: React.FC = () => {
     description: string;
     imageFile: File | null;
     attributes: Array<{ key: string; value: string }>;
-    commercialLicense: boolean;
-    licenseType: "COMMERCIAL_USE" | "COMMERCIAL_REMIX" | null;
-    revenueShare: string;
-    mintFee: string;
-    currency: string;
   }>({
     title: "",
     description: "",
     imageFile: null,
     attributes: [{ key: "", value: "" }],
-    commercialLicense: false,
-    licenseType: null,
-    revenueShare: "",
-    mintFee: "",
-    currency: "",
   });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -117,11 +107,9 @@ const CreateIpaPage: React.FC = () => {
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement;
+    const { name, value } = e.target;
 
-    if (type === "checkbox") {
-      setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else if (name === "imageFile") {
+    if (name === "imageFile") {
       const file = (e.target as HTMLInputElement).files?.[0] || null;
       setFormData((prev) => ({ ...prev, imageFile: file }));
     } else {
@@ -285,87 +273,17 @@ const CreateIpaPage: React.FC = () => {
         .update(JSON.stringify(nftMetadata))
         .digest("hex")}`;
 
-      let response;
-
-      if (
-        formData.commercialLicense &&
-        formData.licenseType === "COMMERCIAL_USE"
-      ) {
-        const mintFee = parseInt(formData.mintFee, 10);
-
-        if (isNaN(mintFee)) {
-          setErrorMessage(
-            "Mint Fee и Revenue Share должны быть валидными числами."
-          );
-          setLoading(false);
-          return;
-        }
-
-        if (!formData.currency) {
-          setErrorMessage("Пожалуйста, введите адрес токена валюты.");
-          setLoading(false);
-          return;
-        }
-
-        response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
-          pilType: PIL_TYPE.COMMERCIAL_USE,
-          mintingFee: mintFee,
-          currency: formData.currency as `0x${string}`,
-          ipMetadata: {
-            ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
-            ipMetadataHash: ipHash as `0x${string}`,
-            nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
-            nftMetadataHash: nftHash as `0x${string}`,
-          },
-          txOptions: { waitForTransaction: true },
-        });
-      } else if (
-        formData.commercialLicense &&
-        formData.licenseType === "COMMERCIAL_REMIX"
-      ) {
-        const revenueShare = parseInt(formData.revenueShare, 10);
-        const mintFee = parseInt(formData.mintFee, 10);
-
-        if (isNaN(revenueShare)) {
-          setErrorMessage("Revenue Share должен быть валидным числом.");
-          setLoading(false);
-          return;
-        }
-
-        if (!formData.currency) {
-          setErrorMessage("Пожалуйста, введите адрес токена валюты.");
-          setLoading(false);
-          return;
-        }
-
-        response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
-          pilType: PIL_TYPE.COMMERCIAL_REMIX,
-          commercialRevShare: revenueShare,
-          mintingFee: mintFee,
-          currency: formData.currency as `0x${string}`,
-          ipMetadata: {
-            ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
-            ipMetadataHash: ipHash as `0x${string}`,
-            nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
-            nftMetadataHash: nftHash as `0x${string}`,
-          },
-          txOptions: { waitForTransaction: true },
-        });
-      } else {
-        response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
-          pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
-          ipMetadata: {
-            ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
-            ipMetadataHash: ipHash as `0x${string}`,
-            nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
-            nftMetadataHash: nftHash as `0x${string}`,
-          },
-          txOptions: { waitForTransaction: true },
-        });
-      }
+      const response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
+        nftContract: nftContract as `0x${string}`,
+        pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
+        ipMetadata: {
+          ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
+          ipMetadataHash: ipHash as `0x${string}`,
+          nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
+          nftMetadataHash: nftHash as `0x${string}`,
+        },
+        txOptions: { waitForTransaction: true },
+      });
 
       console.log("Response:", response);
 
@@ -506,118 +424,6 @@ const CreateIpaPage: React.FC = () => {
                   + Add Attributes
                 </button>
               </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="commercialLicense"
-                  name="commercialLicense"
-                  checked={formData.commercialLicense}
-                  onChange={handleChange}
-                  className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="commercialLicense"
-                  className="ml-3 text-sm font-medium text-gray-700"
-                >
-                  Commercial License
-                </label>
-              </div>
-              {formData.commercialLicense && (
-                <div className="mt-4">
-                  <p className="text-sm text-red-700 mb-6">
-                    Select the standard license terms or uncheck Commercial License and add custom terms after registering your asset. <strong>You can add custom terms on your asset's My IPA page.</strong>
-                  </p>
-                  <div className="flex space-x-4">
-                    <label
-                      className="flex items-center"
-                      title="Retain control over reuse of your work, while allowing anyone to appropriately use the work in exchange for the economic terms you set."
-                    >
-                      <input
-                        type="radio"
-                        name="licenseType"
-                        value="COMMERCIAL_USE"
-                        checked={formData.licenseType === "COMMERCIAL_USE"}
-                        onChange={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            licenseType: "COMMERCIAL_USE",
-                          }))
-                        }
-                        className="h-4 w-4 text-indigo-600 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">
-                        Commercial use
-                      </span>
-                    </label>
-                    <label
-                      className="ml-2 flex items-center"
-                      title="This license allows for endless free remixing while tracking all uses of your work while giving you full credit, with each derivative paying a percentage of revenue to its 'parent' IP."
-                    >
-                      <input
-                        type="radio"
-                        name="licenseType"
-                        value="COMMERCIAL_REMIX"
-                        checked={formData.licenseType === "COMMERCIAL_REMIX"}
-                        onChange={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            licenseType: "COMMERCIAL_REMIX",
-                          }))
-                        }
-                        className="h-4 w-4 text-indigo-600 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">
-                        Commercial remix
-                      </span>
-                    </label>
-                  </div>
-                  {formData.licenseType === "COMMERCIAL_REMIX" && (
-                    <div className="mt-2">
-                      <input
-                        type="number"
-                        name="revenueShare"
-                        placeholder="% Revenue"
-                        value={formData.revenueShare}
-                        onChange={handleChange}
-                        required
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                        min="0"
-                        max="100"
-                      />
-                    </div>
-                  )}
-                  {formData.licenseType && (
-                    <div>
-                      <input
-                        type="number"
-                        name="mintFee"
-                        placeholder="Fee for mint"
-                        value={formData.mintFee}
-                        onChange={handleChange}
-                        required
-                        className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                        min="0"
-                        max="100"
-                      />
-                    </div>
-                  )}
-                  {formData.licenseType && (
-                    <div>
-                      <input
-                        type="text"
-                        name="currency"
-                        placeholder="Currency (Token Address)"
-                        value={formData.currency}
-                        onChange={handleChange}
-                        required
-                        pattern="^0x[a-fA-F0-9]{40}$"
-                        title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
-                        className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mt-5">
                   Upload Image (.png, .jpeg, .jpg, .webp)

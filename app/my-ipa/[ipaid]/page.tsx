@@ -3,10 +3,12 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import ImageLoader from '@/components/ImageLoader';
 import LicenseDetails from '@/components/LicenseDetails';
+import Link from 'next/link';
+
 
 interface PageProps {
     params: {
-        id: string;
+        ipaid: string;
     };
 }
 
@@ -39,14 +41,14 @@ interface AssetMetadata {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const { id } = params;
+    const { ipaid } = params;
     return {
-        title: `Asset Details - ${id}`,
+        title: `Asset Details - ${ipaid}`,
     };
 }
 
 const AssetDetailsPage = async ({ params }: PageProps) => {
-    const { id } = params;
+    const { ipaid } = params;
 
     const fetchAssetData = async (): Promise<IPAssetDetails | null> => {
         try {
@@ -59,7 +61,7 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                 }
             };
 
-            const response = await fetch(`https://api.storyprotocol.net/api/v1/assets/${id}`, options);
+            const response = await fetch(`https://api.storyprotocol.net/api/v1/assets/${ipaid}`, options);
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error(`Error fetching asset data: ${response.status} ${response.statusText}`, errorText);
@@ -90,7 +92,7 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                 }
             };
 
-            const response = await fetch(`https://api.storyprotocol.net/api/v1/assets/${id}/metadata`, options);
+            const response = await fetch(`https://api.storyprotocol.net/api/v1/assets/${ipaid}/metadata`, options);
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error(`Error fetching asset metadata: ${response.status} ${response.statusText}`, errorText);
@@ -118,11 +120,7 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
     return (
         <div className="container mx-auto p-8">
             <div className="bg-white shadow rounded p-8">
-                <h1 className="text-3xl font-bold mb-6">Asset Details</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {assetData.nftMetadata.tokenUri && (
-                        <ImageLoader tokenUri={assetData.nftMetadata.tokenUri} altText={assetData.nftMetadata.name} />
-                    )}
                     <div>
                         <h2 className="text-2xl font-bold mb-2">{assetData.nftMetadata.name}</h2>
                         <p className="text-gray-700 mb-2">Token ID: {assetData.nftMetadata.tokenId}</p>
@@ -136,8 +134,10 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                             View on Story Explorer
                         </a>
                     </div>
+                    {assetData.nftMetadata.tokenUri && (
+                        <ImageLoader tokenUri={assetData.nftMetadata.tokenUri} altText={assetData.nftMetadata.name} />
+                    )}
                     <div className="md:col-span-2">
-                        <h3 className="text-xl font-bold mb-4">Additional Metadata</h3>
                         {assetMetadata ? (
                             <div>
                                 <p className="mb-2">
@@ -203,9 +203,13 @@ const AssetDetailsPage = async ({ params }: PageProps) => {
                         )}
                     </div>
                 </div>
-
-                {/* Добавление компонента LicenseDetails для отображения лицензий */}
                 <LicenseDetails ipId={assetData.id} />
+                <Link
+                    href={`/add-commercial-license/${assetData.id}`}
+                    className="inline-block mt-4 px-4 py-2 bg-indigo-600 text-white font-semibold rounded hover:bg-indigo-700 transition duration-300"
+                >
+                    Add Commercial License
+                </Link>
             </div>
         </div>
     );

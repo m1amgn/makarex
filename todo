@@ -1,6 +1,8 @@
+Mint license tokens
+
 Add choose currence and get currence address from the object in utils.
 
-Add view license information in my-ip-assets/id. If there is no license add button to add commercial license
+Add page with licences settings
 
 Divide create IPA trademarks and create IPA invention.
 
@@ -14,9 +16,3 @@ Learn:
 - about PIL
 - about rules of using IP
 - about correction of rules after mint
-
-Make new form depends on information
-
-Make new visualisation page
-
-
