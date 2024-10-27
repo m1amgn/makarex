@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import ImageLoader from '@/components/ImageLoader';
 
@@ -16,29 +15,28 @@ interface IPAsset {
   };
 }
 
-const IPAssetsList: React.FC = () => {
-  const { address, isConnected } = useAccount();
+interface IPAssetsListProps {
+  address: `0x${string}`;
+}
+
+const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
   const [ipAssets, setIpAssets] = useState<IPAsset[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [nftContract, setNftContract] = useState<string | null>(null);
 
   const router = useRouter();
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (address) {
       fetchNftContract();
-    } else {
-      setLoading(false);
     }
-  }, [isConnected, address]);
+  }, [address]);
 
   const fetchNftContract = async () => {
     try {
       const response = await fetch(`/api/get_nft_contract_by_address?address=${address}`);
       const data = await response.json();
       if (data.nftContract) {
-        setNftContract(data.nftContract);
         fetchIPAssets(data.nftContract);
       } else {
         setError('No NFT collection found for your address.');
@@ -73,7 +71,7 @@ const IPAssetsList: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       setIpAssets(data.data);
       setLoading(false);
     } catch (error: any) {
@@ -89,14 +87,6 @@ const IPAssetsList: React.FC = () => {
 
   if (error) {
     return <div className="text-center p-8 text-red-500">Error: {error}</div>;
-  }
-
-  if (!isConnected || !address) {
-    return (
-      <div className="text-center p-8">
-        <p>Please connect your wallet to view your IP assets.</p>
-      </div>
-    );
   }
 
   if (ipAssets.length === 0) {
