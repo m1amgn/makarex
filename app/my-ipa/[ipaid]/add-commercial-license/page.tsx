@@ -78,7 +78,6 @@ const AddCommercialLicensePage: React.FC = () => {
         } else {
             let updatedValue = value;
 
-            // Если поле ожидает значение типа `0x${string}`, убедитесь, что оно начинается с `0x`
             if (name === "currency" || name === "commercializerChecker" || name === "commercializerCheckerData") {
                 if (!updatedValue.startsWith("0x")) {
                     updatedValue = "0x" + updatedValue;

@@ -1,6 +1,6 @@
 Think about API, can every persone change address owner collection?
 
-Mint license tokens
+Add page my-license-tokens https://docs.story.foundation/reference/post_api-v1-licenses-tokens
 
 Add choose currence and get currence address from the object in utils.
 

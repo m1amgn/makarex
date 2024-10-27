@@ -10,7 +10,7 @@ interface MintLicenseTokensButtonProps {
 const MintLicenseTokensButton: React.FC<MintLicenseTokensButtonProps> = ({ assetId }) => {
   return (
     <Link
-      href={`/mint-license-tokens/${assetId}`}
+      href={`${assetId}/mint-license-tokens/`}
       className="inline-block mr-4 mt-4 px-4 py-2 bg-indigo-600 text-white font-semibold rounded hover:bg-indigo-700 transition duration-300"
     >
       Mint License Tokens
