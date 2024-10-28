@@ -6,7 +6,7 @@ import { checksumAddress } from 'viem';
 import { StoryClient, StoryConfig } from '@story-protocol/core-sdk';
 import { custom } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation'
 
 interface PageProps {
     params: {
@@ -39,9 +39,11 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
     const [receiverAddress, setReceiverAddress] = useState<string>('');
     const [amount, setAmount] = useState<number>(1);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isProcessing, setIsProcessing] = useState<boolean>(false); // New state for processing
     const [error, setError] = useState<string | null>(null);
     const [ownerAddress, setOwnerAddress] = useState<string | null>(null);
     const { data: wallet } = useWalletClient();
+    const router = useRouter();
 
 
     const fetchAssetData = async (): Promise<IPAssetDetails | null> => {
@@ -161,9 +163,11 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
 
     const handleMint = async () => {
         try {
+            setIsProcessing(true); // Start processing
             const client = setupStoryClient();
             if (!client) {
                 setError('Client is not initialized');
+                setIsProcessing(false);
                 return;
             }
 
@@ -176,9 +180,13 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
             });
 
             alert(`License Token minted https://testnet.storyscan.xyz/tx/${response.txHash}, License IDs: ${response.licenseTokenIds}`);
+            router.push(`/my-ipa/${ipaid}`);
+
         } catch (error) {
             console.error('Error during minting:', error);
             setError('Error during minting');
+        } finally {
+            setIsProcessing(false); // End processing
         }
     };
 
@@ -211,7 +219,7 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
     }
 
     if (error) {
-        return <div className="text-center p-8">Loading...</div>;
+        return <div className="text-center p-8 text-red-500">{error}</div>;
     }
 
     if (!isConnected || !address || !ownerAddress || toHexAddress(address) !== toHexAddress(ownerAddress)) {
@@ -220,21 +228,19 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
-            <div className="flex justify-end mb-4">
+            {/* Back Button */}
+            <div className="flex justify-between items-center mb-4">
+                <button
+                    onClick={() => router.push(`/my-ipa/${ipaid}`)}
+                    className="py-2 px-4 rounded-md bg-gray-100 text-gray-700 font-semibold hover:bg-gray-300 transition duration-300"
+                >
+                    Back
+                </button>
                 <ConnectButton />
             </div>
             <div className="max-w-lg w-full mx-auto bg-white rounded-lg shadow-lg p-6">
-                {error && (
-                    <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-                        {error}
-                    </div>
-                )}
-                {!isConnected || !address ? (
-                    <p className="text-center text-gray-500">
-                        Please connect your wallet to proceed.
-                    </p>
-                ) : isLoading ? (
-                    <p className="text-center text-gray-500">Processing...</p>
+                {isProcessing ? (
+                    <div className="text-center text-gray-500">Processing transaction...</div>
                 ) : (
                     <>
                         <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">
@@ -265,7 +271,6 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
                                         </option>
                                     ))}
                                 </select>
-
                             </div>
                             {/* Receiver Address */}
                             <div>
@@ -302,6 +307,7 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
                             <button
                                 type="submit"
                                 className="w-full py-3 px-4 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
+                                disabled={isProcessing}
                             >
                                 Mint Tokens
                             </button>

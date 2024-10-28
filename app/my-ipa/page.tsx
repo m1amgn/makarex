@@ -4,6 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import React from 'react';
 import IPAssetsList from '../../components/IPAssetsList';
 import { useAccount } from 'wagmi';
+import RegisterIpaButton from '@/components/RegisterIpaButton';
 
 const MyIPAssets: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -11,11 +12,12 @@ const MyIPAssets: React.FC = () => {
   return (
     <div>
       <div className="min-h-screen bg-gray-100 p-8">
-      <div className="flex justify-end">
-        <ConnectButton />
-      </div>
+        <div className="flex justify-end">
+          <ConnectButton />
+        </div>
         {isConnected && address ? (
           <>
+            <RegisterIpaButton />
             <h1 className="text-3xl font-bold text-center mb-8">My IP Assets</h1>
             <IPAssetsList address={address} />
           </>

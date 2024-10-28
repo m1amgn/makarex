@@ -11,7 +11,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 const AddCommercialLicensePage: React.FC = () => {
     const router = useRouter();
     const params = useParams();
-    const ipId = params.ipaid as `0x${string}` | null;
+    const ipaid = params.ipaid as `0x${string}` | null;
 
     const { address, isConnected } = useAccount();
     const { data: wallet } = useWalletClient();
@@ -105,7 +105,7 @@ const AddCommercialLicensePage: React.FC = () => {
             return;
         }
 
-        if (!ipId) {
+        if (!ipaid) {
             setErrorMessage("Invalid IP Asset ID.");
             setLoading(false);
             return;
@@ -140,7 +140,7 @@ const AddCommercialLicensePage: React.FC = () => {
             };
 
             const response = await client.ipAsset.registerPilTermsAndAttach({
-                ipId: ipId,
+                ipId: ipaid,
                 terms: licenseTerms,
                 txOptions: { waitForTransaction: true },
             });
@@ -148,7 +148,7 @@ const AddCommercialLicensePage: React.FC = () => {
             console.log("Response:", response);
 
             alert(`License added successfully! Transaction Hash: ${response.txHash}`);
-            router.push(`/my-ipa/${ipId}`);
+            router.push(`/my-ipa/${ipaid}`);
         } catch (error: any) {
             console.error("Error adding license:", error);
             setErrorMessage(`Error adding license: ${error.message}`);
@@ -159,7 +159,14 @@ const AddCommercialLicensePage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
-            <div className="flex justify-end mb-4">
+            {/* Back Button */}
+            <div className="flex justify-between items-center mb-4">
+                <button
+                    onClick={() => router.push(`/my-ipa/${ipaid}`)}
+                    className="py-2 px-4 rounded-md bg-gray-100 text-gray-700 font-semibold hover:bg-gray-300 transition duration-300"
+                >
+                    Back
+                </button>
                 <ConnectButton />
             </div>
             <div className="max-w-lg w-full mx-auto bg-white rounded-lg shadow-lg p-6">

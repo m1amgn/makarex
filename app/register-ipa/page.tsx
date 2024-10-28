@@ -168,7 +168,9 @@ const CreateIpaPage: React.FC = () => {
     try {
       const response = await fetch("/api/get_nft_contract_by_address", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY_SET_OWNER_NFT_CONTRACT as string, },
         body: JSON.stringify({ address, nftContract }),
       });
 
