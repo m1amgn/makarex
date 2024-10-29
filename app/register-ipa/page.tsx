@@ -4,12 +4,16 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient } from "wagmi";
 import { createHash } from "crypto";
-import { StoryClient, StoryConfig, PIL_TYPE } from "@story-protocol/core-sdk";
+import { StoryClient, StoryConfig, PIL_TYPE, IpMetadata } from "@story-protocol/core-sdk";
 import { custom } from "viem";
+import { useRouter } from 'next/navigation';
 
 const CreateIpaPage: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { data: wallet } = useWalletClient();
+  const router = useRouter();
+
+
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -36,13 +40,15 @@ const CreateIpaPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [nftContract, setNftContract] = useState<string | null | undefined>(null);
   const [needsCollection, setNeedsCollection] = useState<boolean>(false);
-  const [collectionData, setCollectionData] = useState<{
-    name: string;
-    symbol: string;
-  }>({
+  const [collectionData, setCollectionData] = useState({
     name: "",
     symbol: "",
+    isPublicMinting: true,
+    mintOpen: true,
+    mintFeeRecipient: address || "",
+    contractURI: "",
   });
+
   const [loading, setLoading] = useState<boolean>(false);
 
   function setupStoryClient(): StoryClient | null {
@@ -129,11 +135,6 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
-  const handleCollectionChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCollectionData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const addAttribute = () => {
     setFormData((prev) => ({
       ...prev,
@@ -168,9 +169,10 @@ const CreateIpaPage: React.FC = () => {
     try {
       const response = await fetch("/api/get_nft_contract_by_address", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          'x-api-key': process.env.NEXT_PUBLIC_API_KEY_SET_OWNER_NFT_CONTRACT as string, },
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY_SET_OWNER_NFT_CONTRACT as string,
+        },
         body: JSON.stringify({ address, nftContract }),
       });
 
@@ -206,24 +208,33 @@ const CreateIpaPage: React.FC = () => {
       const newCollection = await client.nftClient.createNFTCollection({
         name: collectionData.name,
         symbol: collectionData.symbol,
+        isPublicMinting: collectionData.isPublicMinting,
+        mintOpen: collectionData.mintOpen,
+        mintFeeRecipient: address as `0x${string}`,
+        contractURI: collectionData.contractURI,
         txOptions: { waitForTransaction: true },
       });
 
-      setNftContract(newCollection.nftContract);
+      setNftContract(newCollection.spgNftContract);
       setNeedsCollection(false);
 
       await updateNftOwners(
         address!,
-        newCollection.nftContract as `0x${string}`
+        newCollection.spgNftContract as `0x${string}`
       );
 
-      alert(`NFT Collection created successfully! Address: ${newCollection.nftContract}`);
+      alert(`NFT Collection created successfully! Address: ${newCollection.spgNftContract}`);
     } catch (error: any) {
       console.error("Error creating NFT collection:", error);
       setErrorMessage(`Error creating NFT collection: ${error.message}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCollectionChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCollectionData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -263,11 +274,11 @@ const CreateIpaPage: React.FC = () => {
         value: attr.value,
       }));
 
-      const ipMetadata = {
+      const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
         title: formData.title,
         description: formData.description,
         attributes: formattedAttributes,
-      };
+      })
 
       const nftMetadata = {
         name: formData.title,
@@ -310,7 +321,7 @@ const CreateIpaPage: React.FC = () => {
         }
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
+          spgNftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_USE,
           mintingFee: mintFee,
           currency: formData.currency as `0x${string}`,
@@ -342,7 +353,7 @@ const CreateIpaPage: React.FC = () => {
         }
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
+          spgNftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_REMIX,
           commercialRevShare: revenueShare,
           mintingFee: mintFee,
@@ -357,7 +368,7 @@ const CreateIpaPage: React.FC = () => {
         });
       } else {
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
+          spgNftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
           ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
@@ -372,6 +383,8 @@ const CreateIpaPage: React.FC = () => {
       console.log("Response:", response);
 
       alert(`IPA: https://explorer.story.foundation/ipa/${response.ipId}`);
+      router.push(`/my-ipa`);
+
     } catch (error: any) {
       console.error("Error in registration IPA:", error);
       setErrorMessage(`Error in registration IPA: ${error.message}`);
@@ -402,7 +415,6 @@ const CreateIpaPage: React.FC = () => {
             <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">
               Create NFT Collection
             </h1>
-            <p className="text-center text-gray-500">Let's build your own NFT collection within which you can create and register your NFT assets.</p>
             <form onSubmit={handleCollectionSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700">

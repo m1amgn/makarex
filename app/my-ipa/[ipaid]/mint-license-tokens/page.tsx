@@ -163,7 +163,7 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
 
     const handleMint = async () => {
         try {
-            setIsProcessing(true); // Start processing
+            setIsProcessing(true);
             const client = setupStoryClient();
             if (!client) {
                 setError('Client is not initialized');
@@ -186,7 +186,7 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
             console.error('Error during minting:', error);
             setError('Error during minting');
         } finally {
-            setIsProcessing(false); // End processing
+            setIsProcessing(false);
         }
     };
 

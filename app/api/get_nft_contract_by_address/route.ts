@@ -1,5 +1,3 @@
-// app/api/get_nft_contract_by_address/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
