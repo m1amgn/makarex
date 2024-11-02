@@ -1,8 +1,18 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import ImageLoader from '@/components/ImageLoader';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import ImageLoader from "@/components/ImageLoader";
+import { odyssey } from "@story-protocol/core-sdk";
+import { createPublicClient, http } from "viem";
+import { spgTokenContractAbi } from "@/abi/spgTokenContract";
+
+export const baseConfig = {
+  chain: odyssey,
+  transport: http(),
+} as const;
+
+export const publicClient = createPublicClient(baseConfig);
 
 interface IPAsset {
   id: string;
@@ -32,19 +42,81 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     }
   }, [address]);
 
+//  const results: string[] = [];
+
+// function myAsyncFunction(value: number): Promise<string> {
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       resolve(`Результат для ${value}`);
+//     }, 1000);
+//   });
+// }
+
+// async function collectResults(): Promise<void> {
+//   for (let i = 1; i <= n; i++) {
+//     const result = await myAsyncFunction(i);
+//     results.push(result);
+//   }
+// }
+// collectResults();
+
   const fetchNftContract = async () => {
     try {
-      const response = await fetch(`/api/get_nft_contract_by_address?address=${address}`);
+      const response = await fetch(
+        `/api/get_nft_contract_by_address?address=${address}`
+      );
       const data = await response.json();
       if (data.nftContract) {
         fetchIPAssets(data.nftContract);
       } else {
-        setError('No NFT collection found for your address.');
+        setError("No NFT collection found for your address.");
         setLoading(false);
       }
     } catch (error: any) {
-      console.error('Error fetching nftContract:', error);
-      setError('Error fetching NFT contract. Please try again.');
+      console.error("Error fetching nftContract:", error);
+      setError("Error fetching NFT contract. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  const getIPAssets = async (tokensQuantity: number) => {
+    try {
+      const ipidArray = []
+      for (let i = 1; i <= tokensQuantity; i++ ) {
+
+      }
+
+    //   const tokensQuantityResponse = publicClient.readContract({
+    //     address: nftContractAddress as `0x${string}`,
+    //     abi: spgTokenContractAbi,
+    //     functionName: "balanceOf",
+    //     args: [address],
+    //   });
+    //   tokensQuantityResponse.then((tokensQuantity) => {
+    //     console.log(Number(tokensQuantity));
+    //   });
+    } catch (error: any) {
+      console.error("Error fetching IP assets:", error);
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
+  const getNftTokensQuantity = async (nftContractAddress: string) => {
+    try {
+      const tokensQuantityResponse = publicClient.readContract({
+        address: nftContractAddress as `0x${string}`,
+        abi: spgTokenContractAbi,
+        functionName: "balanceOf",
+        args: [address],
+      });
+      tokensQuantityResponse.then((tokensQuantity) => {
+        getIPAssets(Number(tokensQuantity))
+        console.log(Number(tokensQuantity));
+      });
+    } catch (error: any) {
+      console.error("Error fetching IP assets:", error);
+      setError(error.message);
       setLoading(false);
     }
   };
@@ -52,22 +124,25 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
   const fetchIPAssets = async (nftContractAddress: string) => {
     try {
       const options = {
-        method: 'POST',
+        method: "POST",
         headers: {
-          accept: 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_X_API_KEY as string,
-          'X-CHAIN': process.env.NEXT_PUBLIC_X_CHAIN as string,
-          'content-type': 'application/json',
+          accept: "application/json",
+          "X-API-Key": process.env.NEXT_PUBLIC_X_API_KEY as string,
+          "X-CHAIN": process.env.NEXT_PUBLIC_X_CHAIN as string,
+          "content-type": "application/json",
         },
         body: JSON.stringify({
           options: { tokenContractIds: [nftContractAddress] },
         }),
-        cache: 'no-store' as RequestCache,
+        cache: "no-store" as RequestCache,
       };
 
-      const response = await fetch('https://api.storyprotocol.net/api/v1/assets', options);
+      const response = await fetch(
+        "https://api.storyprotocol.net/api/v1/assets",
+        options
+      );
       if (!response.ok) {
-        throw new Error('Error fetching data from server');
+        throw new Error("Error fetching data from server");
       }
 
       const data = await response.json();
@@ -75,7 +150,7 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
       setIpAssets(data.data);
       setLoading(false);
     } catch (error: any) {
-      console.error('Error fetching IP assets:', error);
+      console.error("Error fetching IP assets:", error);
       setError(error.message);
       setLoading(false);
     }
@@ -101,7 +176,10 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
           className="bg-white shadow rounded p-4 cursor-pointer"
           onClick={() => router.push(`/my-ipa/${asset.id}`)}
         >
-          <ImageLoader tokenUri={asset.nftMetadata.tokenUri} altText={asset.nftMetadata.name} />
+          <ImageLoader
+            tokenUri={asset.nftMetadata.tokenUri}
+            altText={asset.nftMetadata.name}
+          />
           <h2 className="text-xl font-bold mb-2">{asset.nftMetadata.name}</h2>
         </div>
       ))}

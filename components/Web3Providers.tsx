@@ -4,12 +4,12 @@ import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { PropsWithChildren } from "react";
-import { iliad } from "@story-protocol/core-sdk";
+import { odyssey } from "@story-protocol/core-sdk";
 
 const config = getDefaultConfig({
   appName: "Test Story App",
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
-  chains: [iliad],
+  chains: [odyssey],
   ssr: true,
 });
 

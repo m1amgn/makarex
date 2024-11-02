@@ -4,7 +4,7 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient } from "wagmi";
 import { createHash } from "crypto";
-import { StoryClient, StoryConfig, PIL_TYPE, IpMetadata } from "@story-protocol/core-sdk";
+import { StoryClient, StoryConfig, PIL_TYPE, IpMetadata, odyssey } from "@story-protocol/core-sdk";
 import { custom } from "viem";
 import { useRouter } from 'next/navigation';
 
@@ -57,7 +57,7 @@ const CreateIpaPage: React.FC = () => {
     const config: StoryConfig = {
       wallet: wallet,
       transport: custom(wallet.transport),
-      chainId: "iliad",
+      chainId: "odyssey",
     };
     const client = StoryClient.newClient(config);
     return client;
@@ -208,18 +208,22 @@ const CreateIpaPage: React.FC = () => {
       const newCollection = await client.nftClient.createNFTCollection({
         name: collectionData.name,
         symbol: collectionData.symbol,
+        isPublicMinting: collectionData.isPublicMinting,
+        mintOpen: collectionData.mintOpen,
+        mintFeeRecipient: address as `0x${string}`,
+        contractURI: collectionData.contractURI,
         txOptions: { waitForTransaction: true },
       });
 
-      setNftContract(newCollection.nftContract);
+      setNftContract(newCollection.spgNftContract);
       setNeedsCollection(false);
 
       await updateNftOwners(
         address!,
-        newCollection.nftContract as `0x${string}`
+        newCollection.spgNftContract as `0x${string}`
       );
 
-      alert(`NFT Collection created successfully! Address: ${newCollection.nftContract}`);
+      alert(`NFT Collection created successfully! Address: ${newCollection.spgNftContract}`);
     } catch (error: any) {
       console.error("Error creating NFT collection:", error);
       setErrorMessage(`Error creating NFT collection: ${error.message}`);
@@ -304,20 +308,20 @@ const CreateIpaPage: React.FC = () => {
 
         if (isNaN(mintFee)) {
           setErrorMessage(
-            "Mint Fee и Revenue Share должны быть валидными числами."
+            "Mint Fee and Revenue Share must be valid numbers."
           );
           setLoading(false);
           return;
         }
 
         if (!formData.currency) {
-          setErrorMessage("Пожалуйста, введите адрес токена валюты.");
+          setErrorMessage("Please enter token address.");
           setLoading(false);
           return;
         }
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
+          spgNftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_USE,
           mintingFee: mintFee,
           currency: formData.currency as `0x${string}`,
@@ -337,19 +341,19 @@ const CreateIpaPage: React.FC = () => {
         const mintFee = parseInt(formData.mintFee, 10);
 
         if (isNaN(revenueShare)) {
-          setErrorMessage("Revenue Share должен быть валидным числом.");
+          setErrorMessage("Revenue Share must be valid numbers.");
           setLoading(false);
           return;
         }
 
         if (!formData.currency) {
-          setErrorMessage("Пожалуйста, введите адрес токена валюты.");
+          setErrorMessage("Please enter token address.");
           setLoading(false);
           return;
         }
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
+          spgNftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_REMIX,
           commercialRevShare: revenueShare,
           mintingFee: mintFee,
@@ -366,7 +370,7 @@ const CreateIpaPage: React.FC = () => {
       } else {
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          nftContract: nftContract as `0x${string}`,
+          spgNftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
           ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
@@ -380,7 +384,7 @@ const CreateIpaPage: React.FC = () => {
 
       console.log("Response:", response);
 
-      alert(`IPA: https://explorer.story.foundation/ipa/${response.ipId}`);
+      alert(`IPA: https://odyssey.explorer.story.foundation//ipa/${response.ipId}`);
       router.push(`/my-ipa`);
 
     } catch (error: any) {
