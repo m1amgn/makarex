@@ -208,22 +208,18 @@ const CreateIpaPage: React.FC = () => {
       const newCollection = await client.nftClient.createNFTCollection({
         name: collectionData.name,
         symbol: collectionData.symbol,
-        isPublicMinting: collectionData.isPublicMinting,
-        mintOpen: collectionData.mintOpen,
-        mintFeeRecipient: address as `0x${string}`,
-        contractURI: collectionData.contractURI,
         txOptions: { waitForTransaction: true },
       });
 
-      setNftContract(newCollection.spgNftContract);
+      setNftContract(newCollection.nftContract);
       setNeedsCollection(false);
 
       await updateNftOwners(
         address!,
-        newCollection.spgNftContract as `0x${string}`
+        newCollection.nftContract as `0x${string}`
       );
 
-      alert(`NFT Collection created successfully! Address: ${newCollection.spgNftContract}`);
+      alert(`NFT Collection created successfully! Address: ${newCollection.nftContract}`);
     } catch (error: any) {
       console.error("Error creating NFT collection:", error);
       setErrorMessage(`Error creating NFT collection: ${error.message}`);
@@ -274,11 +270,11 @@ const CreateIpaPage: React.FC = () => {
         value: attr.value,
       }));
 
-      const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
+      const ipMetadata = {
         title: formData.title,
         description: formData.description,
         attributes: formattedAttributes,
-      })
+      };
 
       const nftMetadata = {
         name: formData.title,
@@ -321,7 +317,7 @@ const CreateIpaPage: React.FC = () => {
         }
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          spgNftContract: nftContract as `0x${string}`,
+          nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_USE,
           mintingFee: mintFee,
           currency: formData.currency as `0x${string}`,
@@ -353,7 +349,7 @@ const CreateIpaPage: React.FC = () => {
         }
 
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          spgNftContract: nftContract as `0x${string}`,
+          nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.COMMERCIAL_REMIX,
           commercialRevShare: revenueShare,
           mintingFee: mintFee,
@@ -366,9 +362,11 @@ const CreateIpaPage: React.FC = () => {
           },
           txOptions: { waitForTransaction: true },
         });
+
       } else {
+
         response = await client.ipAsset.mintAndRegisterIpAssetWithPilTerms({
-          spgNftContract: nftContract as `0x${string}`,
+          nftContract: nftContract as `0x${string}`,
           pilType: PIL_TYPE.NON_COMMERCIAL_REMIX,
           ipMetadata: {
             ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
