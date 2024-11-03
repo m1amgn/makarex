@@ -3,26 +3,22 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ImageLoader from "@/components/ImageLoader";
-import { odyssey } from "@story-protocol/core-sdk";
-import { createPublicClient, http } from "viem";
+import { Abi } from "viem";
+import { readContracts } from "@/utils/readContract";
 import { spgTokenContractAbi } from "@/abi/spgTokenContract";
-
-export const baseConfig = {
-  chain: odyssey,
-  transport: http(),
-} as const;
-
-export const publicClient = createPublicClient(baseConfig);
+import {
+  IPAssetRegistryContractAddress,
+  IPAssetRegistryContractABI,
+} from "@/abi/IPAssetRegistry";
+import {
+  coreMetadataViewModuleABI,
+  coreMetadataViewModuleAddress,
+} from "@/abi/coreMetadataViewModule";
 
 interface IPAsset {
   id: string;
-  nftMetadata: {
-    name: string;
-    imageUrl: string;
-    tokenUri: string;
-    tokenId: string;
-    tokenContract: string;
-  };
+  name: string;
+  tokenUri: string;
 }
 
 interface IPAssetsListProps {
@@ -33,127 +29,127 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
   const [ipAssets, setIpAssets] = useState<IPAsset[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
   const router = useRouter();
 
   useEffect(() => {
-    if (address) {
-      fetchNftContract();
-    }
+    if (address) fetchNFTContract();
   }, [address]);
 
-//  const results: string[] = [];
-
-// function myAsyncFunction(value: number): Promise<string> {
-//   return new Promise((resolve) => {
-//     setTimeout(() => {
-//       resolve(`Результат для ${value}`);
-//     }, 1000);
-//   });
-// }
-
-// async function collectResults(): Promise<void> {
-//   for (let i = 1; i <= n; i++) {
-//     const result = await myAsyncFunction(i);
-//     results.push(result);
-//   }
-// }
-// collectResults();
-
-  const fetchNftContract = async () => {
+  const fetchNFTContract = async () => {
     try {
-      const response = await fetch(
-        `/api/get_nft_contract_by_address?address=${address}`
-      );
-      const data = await response.json();
-      if (data.nftContract) {
-        fetchIPAssets(data.nftContract);
+      const data = await fetchContract(address);
+      if (data?.nftContract) {
+        await fetchIPAssets(data.nftContract);
       } else {
-        setError("No NFT collection found for your address.");
-        setLoading(false);
+        handleError("No NFT collection found.");
       }
-    } catch (error: any) {
-      console.error("Error fetching nftContract:", error);
-      setError("Error fetching NFT contract. Please try again.");
-      setLoading(false);
+    } catch (error) {
+      handleError("Error fetching NFT contract. Please try again.", error);
     }
   };
 
-  const getIPAssets = async (tokensQuantity: number) => {
-    try {
-      const ipidArray = []
-      for (let i = 1; i <= tokensQuantity; i++ ) {
-
-      }
-
-    //   const tokensQuantityResponse = publicClient.readContract({
-    //     address: nftContractAddress as `0x${string}`,
-    //     abi: spgTokenContractAbi,
-    //     functionName: "balanceOf",
-    //     args: [address],
-    //   });
-    //   tokensQuantityResponse.then((tokensQuantity) => {
-    //     console.log(Number(tokensQuantity));
-    //   });
-    } catch (error: any) {
-      console.error("Error fetching IP assets:", error);
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const getNftTokensQuantity = async (nftContractAddress: string) => {
-    try {
-      const tokensQuantityResponse = publicClient.readContract({
-        address: nftContractAddress as `0x${string}`,
-        abi: spgTokenContractAbi,
-        functionName: "balanceOf",
-        args: [address],
-      });
-      tokensQuantityResponse.then((tokensQuantity) => {
-        getIPAssets(Number(tokensQuantity))
-        console.log(Number(tokensQuantity));
-      });
-    } catch (error: any) {
-      console.error("Error fetching IP assets:", error);
-      setError(error.message);
-      setLoading(false);
-    }
+  const fetchContract = async (address: string) => {
+    const response = await fetch(
+      `/api/get_nft_contract_by_address?address=${address}`
+    );
+    if (!response.ok) throw new Error("Failed to fetch NFT contract data");
+    return await response.json();
   };
 
   const fetchIPAssets = async (nftContractAddress: string) => {
     try {
-      const options = {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "X-API-Key": process.env.NEXT_PUBLIC_X_API_KEY as string,
-          "X-CHAIN": process.env.NEXT_PUBLIC_X_CHAIN as string,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          options: { tokenContractIds: [nftContractAddress] },
-        }),
-        cache: "no-store" as RequestCache,
-      };
-
-      const response = await fetch(
-        "https://api.storyprotocol.net/api/v1/assets",
-        options
+      const tokensQuantityBigInt = await getTokensQuantity(
+        nftContractAddress,
+        address
       );
-      if (!response.ok) {
-        throw new Error("Error fetching data from server");
+      const tokensQuantity = Number(tokensQuantityBigInt);
+
+      if (!tokensQuantity) {
+        throw new Error("Invalid tokens quantity on your contract.");
       }
 
-      const data = await response.json();
-
-      setIpAssets(data.data);
+      const assets = await Promise.all(
+        Array.from({ length: tokensQuantity }, (_, i) =>
+          fetchIPAssetData(nftContractAddress, i + 1)
+        )
+      );
+      setIpAssets(assets.filter((asset): asset is IPAsset => asset !== null));
       setLoading(false);
-    } catch (error: any) {
-      console.error("Error fetching IP assets:", error);
-      setError(error.message);
-      setLoading(false);
+    } catch (error) {
+      handleError("Error fetching IP assets", error);
     }
+  };
+
+  const getTokensQuantity = async (
+    nftContractAddress: string,
+    address: `0x${string}`
+  ): Promise<BigInt> => {
+    const quantity = await readContracts(
+      nftContractAddress as `0x${string}`,
+      spgTokenContractAbi as Abi,
+      "balanceOf",
+      [address]
+    );
+    return quantity as BigInt;
+  };
+
+  const fetchIPAssetData = async (
+    nftContractAddress: string,
+    index: number
+  ): Promise<IPAsset | null> => {
+    try {
+      const id = await fetchIPAssetId(nftContractAddress, index);
+      const { name, tokenUri } = await fetchMetadata(id);
+      return { id, name, tokenUri };
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const fetchIPAssetId = async (
+    nftContractAddress: string,
+    index: number
+  ): Promise<string> => {
+    return (await readContracts(
+      IPAssetRegistryContractAddress as `0x${string}`,
+      IPAssetRegistryContractABI as Abi,
+      "ipId",
+      [process.env.NEXT_PUBLIC_X_CHAIN, nftContractAddress, index]
+    )) as string;
+  };
+
+  const fetchMetadata = async (
+    id: string
+  ): Promise<{ name: string; tokenUri: string }> => {
+    const coreMetadata = await readContracts(
+      coreMetadataViewModuleAddress as `0x${string}`,
+      coreMetadataViewModuleABI as Abi,
+      "getCoreMetadata",
+      [id]
+    );
+
+    const tokenUri = coreMetadata.nftTokenURI;
+    if (!tokenUri) throw new Error("Missing token URI");
+
+    const metadataResponse = await fetch(tokenUri);
+    if (!metadataResponse.ok) {
+      throw new Error(`Failed to fetch token URI metadata for ${tokenUri}`);
+    }
+
+    const metadata = await metadataResponse.json();
+    if (!metadata.name) throw new Error("Metadata missing 'name' field");
+
+    return { name: metadata.name, tokenUri };
+  };
+
+  const handleError = (message: string, error?: unknown) => {
+    if (error instanceof Error) {
+      setError(`${message}: ${error.message}`);
+    } else {
+      console.error(message);
+      setError(`${message}: Unknown error`);
+    }
+    setLoading(false);
   };
 
   if (loading) {
@@ -176,11 +172,8 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
           className="bg-white shadow rounded p-4 cursor-pointer"
           onClick={() => router.push(`/my-ipa/${asset.id}`)}
         >
-          <ImageLoader
-            tokenUri={asset.nftMetadata.tokenUri}
-            altText={asset.nftMetadata.name}
-          />
-          <h2 className="text-xl font-bold mb-2">{asset.nftMetadata.name}</h2>
+          <ImageLoader tokenUri={asset.tokenUri} altText={asset.name} />
+          <h2 className="text-xl font-bold mb-2">{asset.name}</h2>
         </div>
       ))}
     </div>
