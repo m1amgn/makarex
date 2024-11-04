@@ -2,7 +2,7 @@
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import React from 'react';
-import IPAssetsList from '../../components/IPAssetsList';
+import IPAssetsList from '@/components/IPAssetsList';
 import { useAccount } from 'wagmi';
 import RegisterIpaButton from '@/components/RegisterIpaButton';
 

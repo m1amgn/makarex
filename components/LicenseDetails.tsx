@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { readContracts } from '@/utils/readContracts';
+import { licenseRegistryAddress, licenseRegistryABI } from '@/abi/licenseRegistry';
+import { PILicenseTemplateAddress, PILicenseTemplateABI } from '@/abi/PILicenseTemplate';
+import { Abi } from 'viem';
 
 interface LicenseDetailsProps {
   ipId: string;
@@ -10,9 +14,30 @@ interface License {
   id: string;
   licenseTerms: Array<{
     trait_type: string;
-    value: string | number;
+    value: string | boolean | bigint | number;
     max_value?: number;
   }>;
+}
+
+
+interface Terms {
+  transferable: boolean;
+  royaltyPolicy: string;
+  defaultMintingFee: bigint;
+  expiration: bigint;
+  commercialUse: boolean;
+  commercialAttribution: boolean;
+  commercializerChecker: string;
+  commercializerCheckerData: string;
+  commercialRevShare: number;
+  commercialRevCeiling: bigint;
+  derivativesAllowed: boolean;
+  derivativesAttribution: boolean;
+  derivativesApproval: boolean;
+  derivativesReciprocal: boolean;
+  derivativeRevCeiling: bigint;
+  currency: string;
+  uri: string;
 }
 
 const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
@@ -20,58 +45,75 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const getLicenseTermsCount = async (
+    ipId: `0x${string}`
+  ): Promise<bigint> => {
+    return await readContracts(
+      licenseRegistryAddress as `0x${string}`,
+      licenseRegistryABI as Abi,
+      "getAttachedLicenseTermsCount",
+      [ipId]
+    );
+  };
+
+  const getAttachedLicenseTerms = async (
+    ipId: `0x${string}`,
+    index: number
+  ): Promise<number> => {
+    const licenseTerms = await readContracts(
+      licenseRegistryAddress as `0x${string}`,
+      licenseRegistryABI as Abi,
+      "getAttachedLicenseTerms",
+      [ipId, index]
+    );
+    return Number(licenseTerms[1]);
+  };
+
+  const getLicenseTerm = async (
+    attachedLicenseTerm: number,
+  ): Promise<Terms> => {
+    return await readContracts(
+      PILicenseTemplateAddress as `0x${string}`,
+      PILicenseTemplateABI as Abi,
+      "getLicenseTerms",
+      [attachedLicenseTerm]
+    );
+  };
+
   useEffect(() => {
     const fetchLicenses = async () => {
+      setLoading(true);
       try {
-        const options = {
-          method: 'GET',
-          headers: {
-            accept: 'application/json',
-            'X-API-Key': process.env.NEXT_PUBLIC_X_API_KEY as string,
-            'X-CHAIN': process.env.NEXT_PUBLIC_X_CHAIN as string,
-          },
-        };
+        const licenseTermsCount = await getLicenseTermsCount(ipId as `0x${string}`);
+        const licenseDetails: License[] = [];
 
-        const response = await fetch(`https://api.storyprotocol.net/api/v1/licenses/ip/terms/${ipId}`, options);
-        if (!response.ok) {
-          throw new Error('Error fetching licenses');
-        }
-
-        const licenseData = await response.json();
-
-        const commercialLicenses = licenseData.data.filter(
-          (license: any) => license.licenseTermsId !== '0' && license.licenseTermsId !== '1'
-        );
-
-        const nonCommercialLicense = licenseData.data.find((license: any) => license.licenseTermsId === '1');
-
-        const licenseDetails = await Promise.all(
-          commercialLicenses.map(async (license: any) => {
-            const termsResponse = await fetch(
-              `https://api.storyprotocol.net/api/v1/licenses/terms/${license.licenseTermsId}`,
-              options
-            );
-
-            if (!termsResponse.ok) {
-              throw new Error('Error fetching license terms');
-            }
-
-            const termsData = await termsResponse.json();
-            return {
-              id: termsData.data.id,
-              licenseTerms: termsData.data.licenseTerms,
-            };
-          })
-        );
-
-        if (nonCommercialLicense) {
-          licenseDetails.unshift({
-            id: '1',
+        for (let index = 0; index < Number(licenseTermsCount); index++) {
+          const attachedLicenseTermId = await getAttachedLicenseTerms(ipId as `0x${string}`, index);
+          const licenseTerm = await getLicenseTerm(attachedLicenseTermId as number); // attachedLicenseTermId уже в формате BigInt
+          const license: License = {
+            id: attachedLicenseTermId.toString(),
             licenseTerms: [
-              { trait_type: 'License Type', value: 'Non-Commercial' },
-              { trait_type: 'Description', value: 'This is a non-commercial license.' },
-            ],
-          });
+              { trait_type: 'Transferable', value: licenseTerm.transferable.toString() },
+              { trait_type: 'Royalty Policy', value: licenseTerm.royaltyPolicy },
+              { trait_type: 'Default Minting Fee', value: licenseTerm.defaultMintingFee.toString() },
+              { trait_type: 'Expiration', value: licenseTerm.expiration.toString() },
+              { trait_type: 'Commercial Use', value: licenseTerm.commercialUse.toString() },
+              { trait_type: 'Commercial Attribution', value: licenseTerm.commercialAttribution.toString() },
+              { trait_type: 'Commercializer Checker', value: licenseTerm.commercializerChecker },
+              { trait_type: 'Commercializer Checker Data', value: licenseTerm.commercializerCheckerData },
+              { trait_type: 'Commercial Rev Share', value: licenseTerm.commercialRevShare },
+              { trait_type: 'Commercial Rev Ceiling', value: licenseTerm.commercialRevCeiling.toString() },
+              { trait_type: 'Derivatives Allowed', value: licenseTerm.derivativesAllowed.toString() },
+              { trait_type: 'Derivatives Attribution', value: licenseTerm.derivativesAttribution.toString() },
+              { trait_type: 'Derivatives Approval', value: licenseTerm.derivativesApproval.toString() },
+              { trait_type: 'Derivatives Reciprocal', value: licenseTerm.derivativesReciprocal.toString() },
+              { trait_type: 'Derivative Rev Ceiling', value: licenseTerm.derivativeRevCeiling.toString() },
+              { trait_type: 'Currency', value: licenseTerm.currency },
+              { trait_type: 'URI', value: licenseTerm.uri },
+            ]
+          };
+
+          licenseDetails.push(license);
         }
 
         setLicenses(licenseDetails);
@@ -82,7 +124,6 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
         setLoading(false);
       }
     };
-
     fetchLicenses();
   }, [ipId]);
 
@@ -104,7 +145,7 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
       {licenses.map((license, index) => (
         <div key={index} className="bg-gray-100 p-4 rounded mb-4">
           <h4 className="text-lg font-semibold mb-2">
-            License ID: {license.id} {license.id !== '1' && '(Commercial)'}
+            License ID: {license.id} {license.id === '1' ? '(Non commercial)' : '(Commercial)'}
           </h4>
           <ul className="list-disc list-inside">
             {license.licenseTerms.map((term, termIndex) => (

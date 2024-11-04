@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
       const metadata = await req.json();
       const result = await pinata.pinJSONToIPFS(metadata);
       return NextResponse.json({ IpfsHash: result.IpfsHash });
-    } else if (contentType.includes('multipart/form-data')) {
+    } 
+    
+    else if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
       const file = formData.get('file') as File;
 
@@ -40,9 +42,10 @@ export async function POST(req: NextRequest) {
       };
 
       const result = await pinata.pinFileToIPFS(stream, options);
-
       return NextResponse.json({ IpfsHash: result.IpfsHash });
-    } else {
+    } 
+    
+    else {
       return NextResponse.json({ message: 'Unsupported content type' }, { status: 400 });
     }
   } catch (error) {

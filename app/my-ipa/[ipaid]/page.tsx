@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useAccount, usePublicClient } from 'wagmi';
-import { notFound } from 'next/navigation';
-import ImageLoader from '@/components/ImageLoader';
 import LicenseDetails from '@/components/LicenseDetails';
 import AddCommercialLicenseButton from '@/components/AddCommercialLicenseButton';
-import { Address } from 'viem';
+import { Abi} from 'viem';
 import { checksumAddress } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import MintLicenseTokensButton from '@/components/MintLicenseTokensButton';
+import { coreMetadataViewModuleAddress, coreMetadataViewModuleABI } from '@/abi/coreMetadataViewModule';
+import { readContracts } from '@/utils/readContracts';
 
 interface PageProps {
   params: {
@@ -17,172 +18,113 @@ interface PageProps {
   };
 }
 
-interface IPAssetDetails {
-  id: string;
-  nftMetadata: {
-    name: string;
-    imageUrl: string;
-    tokenUri: string;
-    tokenId: string;
-    tokenContract: Address;
-  };
+interface nftTokenData {
+  name: string;
+  description: string;
+  image: string;
 }
 
-interface AssetMetadata {
-  id: string;
-  metadataHash: string;
-  metadataUri: string;
-  metadataJson: {
-    title: string;
-    description: string;
-    attributes: Array<{
-      key: string;
-      value: string;
-    }>;
-  };
-  nftMetadataHash: string;
-  nftTokenUri: string;
-  registrationDate: string;
+interface IPAMetadata {
+  title: string;
+  description: string;
+  attributes: Array<{
+    key: string;
+    value: string;
+  }>;
 }
 
 const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
   const { ipaid } = params;
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
-
-  const [assetData, setAssetData] = useState<IPAssetDetails | null>(null);
-  const [assetMetadata, setAssetMetadata] = useState<AssetMetadata | null>(null);
-  const [ownerAddress, setOwnerAddress] = useState<Address | null>(null);
+  const [nftTokenData, setNftTokenData] = useState<nftTokenData | null>(null);
+  const [IPAMetadata, setIPAMetadata] = useState<IPAMetadata | null>(null);
+  const [isOwner, setIsOwner] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchABI = async (): Promise<any> => {
-    try {
-      const response = await fetch('/abis/YourContractAbi.json');
-      if (!response.ok) {
-        throw new Error('Can not download ABI');
-      }
-      const abi = await response.json();
-      return abi;
-    } catch (err: any) {
-      console.error('Can not download ABI:', err);
-      setError('Can not download ABI');
-      return null;
-    }
-  };
-
-  const fetchAssetData = async (): Promise<IPAssetDetails | null> => {
-    try {
-      const options = {
-        method: 'GET',
-        headers: {
-          accept: 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_X_API_KEY as string,
-          'X-CHAIN': process.env.NEXT_PUBLIC_X_CHAIN as string,
-        },
-      };
-
-      const response = await fetch(`https://api.storyprotocol.net/api/v1/assets/${ipaid}`, options);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error fetching asset data: ${response.status} ${response.statusText}`, errorText);
-        throw new Error('Error fetching asset data');
-      }
-
-      const data = await response.json();
-      const assetData = data.data;
-
-      if (assetData && assetData.id) {
-        return assetData;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching asset data:', error);
-      return null;
-    }
-  };
-
-  const fetchAssetMetadata = async (): Promise<AssetMetadata | null> => {
-    try {
-      const options = {
-        method: 'GET',
-        headers: {
-          accept: 'application/json',
-          'X-API-Key': process.env.NEXT_PUBLIC_X_API_KEY as string,
-          'X-CHAIN': process.env.NEXT_PUBLIC_X_CHAIN as string,
-        },
-      };
-
-      const response = await fetch(`https://api.storyprotocol.net/api/v1/assets/${ipaid}/metadata`, options);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error fetching asset metadata: ${response.status} ${response.statusText}`, errorText);
-        throw new Error('Error fetching asset metadata');
-      }
-
-      const data = await response.json();
-
-      if (data && data.id) {
-        return data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching asset metadata:', error);
-      return null;
-    }
+  const fetchMetadata = async (
+    ipaid: `0x${string}`
+  ): Promise<{
+    nftTokenURI: string;
+    nftMetadataHash: `0x${string}`;
+    metadataURI: string;
+    metadataHash: `0x${string}`;
+    registrationDate: number;
+    owner: `0x${string}`;
+  }> => {
+    const coreMetadata = await readContracts(
+      coreMetadataViewModuleAddress as `0x${string}`,
+      coreMetadataViewModuleABI as Abi,
+      "getCoreMetadata",
+      [ipaid]
+    );
+    return coreMetadata;
   };
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
 
-      const contractABI = await fetchABI();
-      if (!contractABI) {
-        setIsLoading(false);
-        return;
-      }
-
-      const [assetDataResult, assetMetadataResult] = await Promise.all([fetchAssetData(), fetchAssetMetadata()]);
-
-      if (!assetDataResult) {
-        setError('Asset not found');
-        setIsLoading(false);
-        return;
-      }
-
-      setAssetData(assetDataResult);
-      setAssetMetadata(assetMetadataResult);
-
       try {
-        if (!publicClient) {
-          throw new Error('publicClient is not initialized');
+        if (!ipaid || typeof ipaid !== 'string') {
+          setError('Invalid IP asset ID.');
+          setIsLoading(false);
+          return;
         }
 
-        const owner = await publicClient.readContract({
-          address: assetDataResult.nftMetadata.tokenContract,
-          abi: contractABI,
-          functionName: 'ownerOf',
-          args: [BigInt(assetDataResult.nftMetadata.tokenId)],
-        });
+        const assetData = await fetchMetadata(ipaid as `0x${string}`);
 
-        setOwnerAddress(owner as Address);
+        if (address && checksumAddress(address) === checksumAddress(assetData.owner)) {
+          setIsOwner(true);
+        } else {
+          setIsOwner(false);
+        }
+
+        if (!assetData.nftTokenURI || !assetData.metadataURI) {
+          setError('Asset not found.');
+          setIsLoading(false);
+          return;
+        }
+
+        const tokenURIResponse = await fetch(assetData.nftTokenURI);
+        if (!tokenURIResponse.ok) {
+          throw new Error(`Failed to fetch token URI metadata for ${assetData.nftTokenURI}`);
+        }
+        const tokenURIData = await tokenURIResponse.json();
+
+        if (!tokenURIData.name || !tokenURIData.image) {
+          throw new Error("Invalid token URI metadata structure.");
+        }
+        setNftTokenData(tokenURIData);
+
+        const metadataURIResponse = await fetch(assetData.metadataURI);
+        if (!metadataURIResponse.ok) {
+          throw new Error(`Failed to fetch metadata URI for ${assetData.metadataURI}`);
+        }
+        const metadataURIData = await metadataURIResponse.json();
+
+        if (!metadataURIData.title || !metadataURIData.attributes) {
+          throw new Error("Invalid metadata URI structure.");
+        }
+        setIPAMetadata(metadataURIData);
       } catch (err) {
-        console.error('Error when obtaining the owner address:', err);
-        setError('Error when obtaining the owner address');
+        console.error('Error fetching asset metadata:', err);
+        setError('Error fetching asset metadata.');
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     fetchData();
-  }, [ipaid]);
+  }, [ipaid, address]);
 
   if (isLoading) {
     return <div className="text-center p-8">Loading your IP asset...</div>;
   }
 
-  if (error || !assetData) {
-    return notFound();
+  if (error || !nftTokenData || !IPAMetadata) {
+    return <div className="text-center p-8 text-red-500">Error: {error || "Asset not found"}</div>;
   }
 
   return (
@@ -191,102 +133,55 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
         <ConnectButton />
       </div>
       <div className="container mx-auto p-8">
-        {isConnected && address && ownerAddress &&
-          checksumAddress(address) === checksumAddress(ownerAddress) && (
-            <>
-            <AddCommercialLicenseButton assetId={assetData.id} />
-            <MintLicenseTokensButton assetId={assetData.id} />
-            </>
-          )}
+        {isConnected && address && isOwner && (
+          <>
+            <AddCommercialLicenseButton assetId={ipaid} />
+            <MintLicenseTokensButton assetId={ipaid} />
+          </>
+        )}
         <div className="bg-white shadow rounded p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">{assetData.nftMetadata.name}</h2>
-              <p className="text-gray-700 mb-2">Token ID: {assetData.nftMetadata.tokenId}</p>
-              <p className="text-gray-700 mb-2">Contract: {assetData.nftMetadata.tokenContract}</p>
-              <a
-                href={`https://explorer.story.foundation/ipa/${assetData.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-600 hover:underline block mt-2"
-              >
-                View on Story Explorer
-              </a>
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="relative w-full md:w-1/2 h-48 md:h-64 lg:h-80">
+              <Image
+                src={nftTokenData.image}
+                alt={nftTokenData.name}
+                fill
+                className="object-contain object-center rounded mb-4"
+                sizes="(max-width: 768px) 100vw,
+                     (max-width: 1200px) 50vw,
+                     33vw"
+              />
             </div>
-            {assetData.nftMetadata.tokenUri && (
-              <ImageLoader tokenUri={assetData.nftMetadata.tokenUri} altText={assetData.nftMetadata.name} />
-            )}
-            <div className="md:col-span-2">
-              {assetMetadata ? (
-                <div>
-                  <p className="mb-2">
-                    <strong>ID:</strong> {assetMetadata.id}
-                  </p>
-                  <p className="mb-2">
-                    <strong>Metadata Hash:</strong> {assetMetadata.metadataHash}
-                  </p>
-                  <p className="mb-2">
-                    <strong>Metadata URI:</strong>{' '}
-                    <a
-                      href={assetMetadata.metadataUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      {assetMetadata.metadataUri}
-                    </a>
-                  </p>
-                  <h4 className="text-lg font-bold mt-4 mb-2">Metadata JSON:</h4>
-                  <ul className="list-disc list-inside">
-                    <li>
-                      <strong>Title:</strong> {assetMetadata.metadataJson.title}
+            <div className="md:w-1/2">
+              <h2 className="text-2xl font-bold mb-2">{nftTokenData.name}</h2>
+              <p className="text-gray-700 mb-2">{nftTokenData.description}</p>
+              <h4 className="text-lg font-bold mt-4 mb-2">Metadata:</h4>
+              <p className="mb-2">
+                <strong>Title:</strong> {IPAMetadata.title}
+              </p>
+              <p className="mb-2">
+                <strong>Description:</strong> {IPAMetadata.description}
+              </p>
+              <p className="mb-2">
+                <strong>Attributes:</strong>
+              </p>
+              {IPAMetadata.attributes && IPAMetadata.attributes.length > 0 ? (
+                <ul className="list-disc list-inside ml-4">
+                  {IPAMetadata.attributes.map((attr, index) => (
+                    <li key={index}>
+                      <strong>{attr.key}:</strong> {attr.value}
                     </li>
-                    <li>
-                      <strong>Description:</strong> {assetMetadata.metadataJson.description}
-                    </li>
-                    <li>
-                      <strong>Attributes:</strong>
-                      {assetMetadata.metadataJson.attributes && assetMetadata.metadataJson.attributes.length > 0 ? (
-                        <ul className="list-disc list-inside ml-4">
-                          {assetMetadata.metadataJson.attributes.map((attr, index) => (
-                            <li key={index}>
-                              <strong>{attr.key}:</strong> {attr.value}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>No attributes available.</p>
-                      )}
-                    </li>
-                  </ul>
-                  <p className="mb-2 mt-4">
-                    <strong>NFT Metadata Hash:</strong> {assetMetadata.nftMetadataHash}
-                  </p>
-                  <p className="mb-2">
-                    <strong>NFT Token URI:</strong>{' '}
-                    <a
-                      href={assetMetadata.nftTokenUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      {assetMetadata.nftTokenUri}
-                    </a>
-                  </p>
-                  <p className="mb-2">
-                    <strong>Registration Date:</strong> {assetMetadata.registrationDate || 'N/A'}
-                  </p>
-                </div>
+                  ))}
+                </ul>
               ) : (
-                <p>No additional metadata available.</p>
+                <p>No attributes available.</p>
               )}
             </div>
           </div>
-          <LicenseDetails ipId={assetData.id} />
+          <LicenseDetails ipId={ipaid} />
         </div>
       </div>
     </>
-
   );
 };
 

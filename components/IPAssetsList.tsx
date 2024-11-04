@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from 'next/image';
 import { useRouter } from "next/navigation";
-import ImageLoader from "@/components/ImageLoader";
 import { Abi } from "viem";
-import { readContracts } from "@/utils/readContract";
+import { readContracts } from "@/utils/readContracts";
 import { spgTokenContractAbi } from "@/abi/spgTokenContract";
 import {
   IPAssetRegistryContractAddress,
@@ -18,7 +18,7 @@ import {
 interface IPAsset {
   id: string;
   name: string;
-  tokenUri: string;
+  imageUrl: string;
 }
 
 interface IPAssetsListProps {
@@ -73,6 +73,7 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
           fetchIPAssetData(nftContractAddress, i + 1)
         )
       );
+
       setIpAssets(assets.filter((asset): asset is IPAsset => asset !== null));
       setLoading(false);
     } catch (error) {
@@ -98,10 +99,12 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     index: number
   ): Promise<IPAsset | null> => {
     try {
-      const id = await fetchIPAssetId(nftContractAddress, index);
-      const { name, tokenUri } = await fetchMetadata(id);
-      return { id, name, tokenUri };
+      const id = await fetchIPAssetId(nftContractAddress, index);  
+      const { name, imageUrl } = await fetchMetadata(id as `0x${string}`);
+  
+      return { id, name, imageUrl };
     } catch (error) {
+      console.error(`Error fetching data for index ${index}:`, error);
       return null;
     }
   };
@@ -119,8 +122,8 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
   };
 
   const fetchMetadata = async (
-    id: string
-  ): Promise<{ name: string; tokenUri: string }> => {
+    id: `0x${string}`
+  ): Promise<{ name: string; imageUrl: string }> => {
     const coreMetadata = await readContracts(
       coreMetadataViewModuleAddress as `0x${string}`,
       coreMetadataViewModuleABI as Abi,
@@ -137,9 +140,9 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     }
 
     const metadata = await metadataResponse.json();
-    if (!metadata.name) throw new Error("Metadata missing 'name' field");
+    if (!metadata.name || !metadata.image) throw new Error("Metadata missing 'name' or 'image' field");
 
-    return { name: metadata.name, tokenUri };
+    return { name: metadata.name, imageUrl: metadata.image };
   };
 
   const handleError = (message: string, error?: unknown) => {
@@ -172,7 +175,17 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
           className="bg-white shadow rounded p-4 cursor-pointer"
           onClick={() => router.push(`/my-ipa/${asset.id}`)}
         >
-          <ImageLoader tokenUri={asset.tokenUri} altText={asset.name} />
+          <div className="relative w-full h-48 md:h-64 lg:h-80">
+            <Image
+              src={asset.imageUrl}
+              alt={asset.name}
+              fill
+              className="object-contain object-center rounded mb-4"
+              sizes="(max-width: 768px) 100vw,
+                       (max-width: 1200px) 50vw,
+                       33vw"
+            />
+          </div>
           <h2 className="text-xl font-bold mb-2">{asset.name}</h2>
         </div>
       ))}

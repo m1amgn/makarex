@@ -4,16 +4,17 @@ import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useWalletClient } from "wagmi";
 import { createHash } from "crypto";
-import { StoryClient, StoryConfig, PIL_TYPE, IpMetadata, odyssey } from "@story-protocol/core-sdk";
-import { custom } from "viem";
+import { IpMetadata, PIL_TYPE } from "@story-protocol/core-sdk";
 import { useRouter } from 'next/navigation';
+import { setupStoryClient } from "@/utils/storyClient";
+import { uploadFileToIPFS } from "@/utils/uploadFileToIPFS";
+import { uploadJSONToIPFS } from "@/utils/uploadJSONToIPFS";
+
 
 const CreateIpaPage: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { data: wallet } = useWalletClient();
   const router = useRouter();
-
-
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -51,18 +52,6 @@ const CreateIpaPage: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  function setupStoryClient(): StoryClient | null {
-    if (!wallet) return null;
-
-    const config: StoryConfig = {
-      wallet: wallet,
-      transport: custom(wallet.transport),
-      chainId: "odyssey",
-    };
-    const client = StoryClient.newClient(config);
-    return client;
-  }
-
   useEffect(() => {
     const fetchNftContract = async () => {
       if (isConnected && address) {
@@ -82,45 +71,10 @@ const CreateIpaPage: React.FC = () => {
         }
       }
     };
-
     fetchNftContract();
   }, [isConnected, address]);
 
-  const uploadJSONToIPFS = async (metadata: any): Promise<string> => {
-    const response = await fetch("/api/upload_to_ipfs", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(metadata),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      return data.IpfsHash;
-    } else {
-      throw new Error(data.message || "Error uploading to IPFS");
-    }
-  };
-
-  const uploadFileToIPFS = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/upload_to_ipfs", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      return data.IpfsHash;
-    } else {
-      throw new Error(data.message || "Error uploading file to IPFS");
-    }
-  };
-
-  const handleChange = (
+  const handleFormChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
@@ -187,7 +141,7 @@ const CreateIpaPage: React.FC = () => {
     }
   };
 
-  const handleCollectionSubmit = async (e: FormEvent) => {
+  const handleSubmitCollectionCreate = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -198,7 +152,7 @@ const CreateIpaPage: React.FC = () => {
     }
 
     try {
-      const client = setupStoryClient();
+      const client = setupStoryClient(wallet);
       if (!client) {
         setErrorMessage("Error initializing StoryClient.");
         setLoading(false);
@@ -237,7 +191,7 @@ const CreateIpaPage: React.FC = () => {
     setCollectionData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmitIPACreate = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -253,7 +207,7 @@ const CreateIpaPage: React.FC = () => {
       return;
     }
 
-    const client = setupStoryClient();
+    const client = setupStoryClient(wallet);
     if (!client) {
       setErrorMessage("Error initializing StoryClient.");
       setLoading(false);
@@ -274,11 +228,11 @@ const CreateIpaPage: React.FC = () => {
         value: attr.value,
       }));
 
-      const ipMetadata = {
+      const ipMetadata: IpMetadata = client.ipAsset.generateIpMetadata({
         title: formData.title,
         description: formData.description,
         attributes: formattedAttributes,
-      };
+      });
 
       const nftMetadata = {
         name: formData.title,
@@ -417,7 +371,7 @@ const CreateIpaPage: React.FC = () => {
             <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">
               Create NFT Collection
             </h1>
-            <form onSubmit={handleCollectionSubmit} className="space-y-5">
+            <form onSubmit={handleSubmitCollectionCreate} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Name
@@ -455,13 +409,13 @@ const CreateIpaPage: React.FC = () => {
             <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">
               Register IP Asset
             </h1>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmitIPACreate} className="space-y-5">
               <div>
                 <input
                   name="title"
                   placeholder="Title"
                   value={formData.title}
-                  onChange={handleChange}
+                  onChange={handleFormChange}
                   required
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                 />
@@ -471,7 +425,7 @@ const CreateIpaPage: React.FC = () => {
                   name="description"
                   placeholder="Description"
                   value={formData.description}
-                  onChange={handleChange}
+                  onChange={handleFormChange}
                   required
                   rows={4}
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
@@ -528,7 +482,7 @@ const CreateIpaPage: React.FC = () => {
                   id="commercialLicense"
                   name="commercialLicense"
                   checked={formData.commercialLicense}
-                  onChange={handleChange}
+                  onChange={handleFormChange}
                   className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
                 />
                 <label
@@ -594,7 +548,7 @@ const CreateIpaPage: React.FC = () => {
                         name="revenueShare"
                         placeholder="% Revenue"
                         value={formData.revenueShare}
-                        onChange={handleChange}
+                        onChange={handleFormChange}
                         required
                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                         min="0"
@@ -609,7 +563,7 @@ const CreateIpaPage: React.FC = () => {
                         name="mintFee"
                         placeholder="Fee for mint"
                         value={formData.mintFee}
-                        onChange={handleChange}
+                        onChange={handleFormChange}
                         required
                         className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                         min="0"
@@ -624,7 +578,7 @@ const CreateIpaPage: React.FC = () => {
                         name="currency"
                         placeholder="Currency (Token Address)"
                         value={formData.currency}
-                        onChange={handleChange}
+                        onChange={handleFormChange}
                         required
                         pattern="^0x[a-fA-F0-9]{40}$"
                         title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
@@ -642,7 +596,7 @@ const CreateIpaPage: React.FC = () => {
                   type="file"
                   name="imageFile"
                   accept="image/*"
-                  onChange={handleChange}
+                  onChange={handleFormChange}
                   required
                   className="mt-2 w-full"
                 />
