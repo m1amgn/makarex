@@ -1,72 +1,99 @@
 "use client";
 
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAccount, useWalletClient } from "wagmi";
-import { StoryClient, StoryConfig, LicenseTerms } from "@story-protocol/core-sdk";
-import { custom } from "viem";
+import { LicenseTerms } from "@story-protocol/core-sdk";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { setupStoryClient } from "@/utils/storyClient";
+import { checksumAddress } from "viem";
+import { getIPAOwner } from "@/utils/getIPAOwner";
 
 
-const AddCommercialLicensePage: React.FC = () => {
+interface PageProps {
+    params: {
+        ipaid: string;
+    };
+}
+
+interface formData {
+    defaultMintingFee: string;
+    currency: `0x${string}`;
+    royaltyPolicy: `0x${string}`;
+    transferable: boolean;
+    expiration: string;
+    commercialUse: boolean;
+    commercialAttribution: boolean;
+    commercializerChecker: `0x${string}`;
+    commercializerCheckerData: `0x${string}`;
+    commercialRevShare: string;
+    commercialRevCeiling: string;
+    derivativesAllowed: boolean;
+    derivativesAttribution: boolean;
+    derivativesApproval: boolean;
+    derivativesReciprocal: boolean;
+    derivativeRevCeiling: string;
+    uri: string;
+}
+
+const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
     const router = useRouter();
-    const params = useParams();
-    const ipaid = params.ipaid as `0x${string}` | null;
-
+    const { ipaid } = params;
     const { address, isConnected } = useAccount();
     const { data: wallet } = useWalletClient();
+    const [isOwner, setIsOwner] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const [formData, setFormData] = useState<{
-        defaultMintingFee: string;
-        currency: `0x${string}`;
-        royaltyPolicy: `0x${string}`;
-        transferable: boolean;
-        expiration: string;
-        commercialUse: boolean;
-        commercialAttribution: boolean;
-        commercializerChecker: `0x${string}`;
-        commercializerCheckerData: `0x${string}`;
-        commercialRevShare: string;
-        commercialRevCeiling: string;
-        derivativesAllowed: boolean;
-        derivativesAttribution: boolean;
-        derivativesApproval: boolean;
-        derivativesReciprocal: boolean;
-        derivativeRevCeiling: string;
-        uri: string;
-    }>({
+    const [formData, setFormData] = useState<formData>({
         defaultMintingFee: "0",
-        currency: "0x91f6F05B08c16769d3c85867548615d270C42fC7",
-        royaltyPolicy: "0x793Df8d32c12B0bE9985FFF6afB8893d347B6686",
+        currency: "0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5",
+        royaltyPolicy: "0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6",
         transferable: false,
         expiration: "0",
         commercialUse: false,
         commercialAttribution: false,
         commercializerChecker: "0x0000000000000000000000000000000000000000",
-        commercializerCheckerData: "0x" as `0x${string}`, commercialRevShare: "0",
+        commercializerCheckerData: "0x" as `0x${string}`,
+        commercialRevShare: "0",
         commercialRevCeiling: "0",
         derivativesAllowed: false,
         derivativesAttribution: false,
         derivativesApproval: false,
         derivativesReciprocal: false,
         derivativeRevCeiling: "0",
-        uri: "",
+        uri: "https://ipfs.io",
     });
 
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    useEffect(() => {
+        const checkOwner = async () => {
+            setIsLoading(true);
+            try {
+                if (!ipaid || typeof ipaid !== 'string') {
+                    setError('Invalid IP asset ID.');
+                    setIsLoading(false);
+                    return;
+                }
+                const owner = await getIPAOwner(ipaid as `0x${string}`);
 
-    function setupStoryClient(): StoryClient | null {
-        if (!wallet) return null;
-
-        const config: StoryConfig = {
-            wallet: wallet,
-            transport: custom(wallet.transport),
-            chainId: "iliad",
+                if (owner) {
+                    if (address && checksumAddress(address) === checksumAddress(owner)) {
+                        setIsOwner(true);
+                    } else {
+                        setIsOwner(false);
+                    }
+                } else {
+                    console.error("Didn't get owner address from contract.")
+                }
+            } catch (err) {
+                console.error('Error checking owner:', err);
+                setError('Error checking owner.');
+            } finally {
+                setIsLoading(false);
+            }
         };
-        const client = StoryClient.newClient(config);
-        return client;
-    }
+        checkOwner();
+    }, [ipaid, address]);
 
     const handleChange = (
         e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -83,38 +110,37 @@ const AddCommercialLicensePage: React.FC = () => {
                     updatedValue = "0x" + updatedValue;
                 }
             }
-
             setFormData((prev) => ({ ...prev, [name]: updatedValue }));
         }
     };
 
-
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setIsLoading(true);
 
         if (!isConnected || !address) {
-            setErrorMessage("Please connect your wallet.");
-            setLoading(false);
+            setError("Please connect your wallet.");
+            setIsLoading(false);
             return;
         }
 
         if (!wallet) {
-            setErrorMessage("Error: wallet not found. Please try again.");
-            setLoading(false);
+            setError("Error: wallet not found. Please try again.");
+            setIsLoading(false);
             return;
         }
 
         if (!ipaid) {
-            setErrorMessage("Invalid IP Asset ID.");
-            setLoading(false);
+            setError("Invalid IP Asset ID.");
+            setIsLoading(false);
             return;
         }
 
-        const client = setupStoryClient();
+        const client = setupStoryClient(wallet);
+
         if (!client) {
-            setErrorMessage("Error initializing StoryClient.");
-            setLoading(false);
+            setError("Error initializing StoryClient.");
+            setIsLoading(false);
             return;
         }
 
@@ -140,7 +166,7 @@ const AddCommercialLicensePage: React.FC = () => {
             };
 
             const response = await client.ipAsset.registerPilTermsAndAttach({
-                ipId: ipaid,
+                ipId: ipaid as `0x${string}`,
                 terms: licenseTerms,
                 txOptions: { waitForTransaction: true },
             });
@@ -151,15 +177,14 @@ const AddCommercialLicensePage: React.FC = () => {
             router.push(`/my-ipa/${ipaid}`);
         } catch (error: any) {
             console.error("Error adding license:", error);
-            setErrorMessage(`Error adding license: ${error.message}`);
+            setError(`Error adding license: ${error.message}`);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
-            {/* Back Button */}
             <div className="flex justify-between items-center mb-4">
                 <button
                     onClick={() => router.push(`/my-ipa/${ipaid}`)}
@@ -170,24 +195,27 @@ const AddCommercialLicensePage: React.FC = () => {
                 <ConnectButton />
             </div>
             <div className="max-w-lg w-full mx-auto bg-white rounded-lg shadow-lg p-6">
-                {errorMessage && (
+                {error && (
                     <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-                        {errorMessage}
+                        {error}
                     </div>
                 )}
                 {!isConnected || !address ? (
                     <p className="text-center text-gray-500">
                         Please connect your wallet to proceed.
                     </p>
-                ) : loading ? (
+                ) : isLoading ? (
                     <p className="text-center text-gray-500">Processing...</p>
+                ) : !isOwner ? (
+                    <div className="text-center p-8">
+                        You can not add commercial license for this IPA.
+                    </div>
                 ) : (
                     <>
                         <h1 className="text-3xl font-semibold text-center mb-8 text-gray-700">
                             Add Commercial License
                         </h1>
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Currency */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Currency (Token Address)
@@ -203,7 +231,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Default Minting Fee */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Default Minting Fee (in Wei)
@@ -218,7 +245,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Royalty Policy */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Royalty Policy
@@ -233,7 +259,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Transferable */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -250,7 +275,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Transferable
                                 </label>
                             </div>
-                            {/* Expiration */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Expiration (Unix Timestamp)
@@ -265,7 +289,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Commercial Use */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -282,7 +305,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Commercial Use
                                 </label>
                             </div>
-                            {/* Commercial Attribution */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -299,7 +321,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Commercial Attribution
                                 </label>
                             </div>
-                            {/* Commercializer Checker */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Commercializer Checker Address
@@ -315,7 +336,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Commercializer Checker Data */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Commercializer Checker Data (Hex String)
@@ -331,8 +351,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-
-                            {/* Commercial Revenue Share */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Commercial Revenue Share (%)
@@ -348,7 +366,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Commercial Revenue Ceiling */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Commercial Revenue Ceiling (in Wei)
@@ -363,7 +380,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Derivatives Allowed */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -380,7 +396,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Derivatives Allowed
                                 </label>
                             </div>
-                            {/* Derivatives Attribution */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -397,7 +412,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Derivatives Attribution
                                 </label>
                             </div>
-                            {/* Derivatives Approval */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -414,7 +428,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Derivatives Approval
                                 </label>
                             </div>
-                            {/* Derivatives Reciprocal */}
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
@@ -431,7 +444,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     Derivatives Reciprocal
                                 </label>
                             </div>
-                            {/* Derivative Revenue Ceiling */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Derivative Revenue Ceiling (in Wei)
@@ -446,7 +458,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* URI */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     License URI
@@ -460,7 +471,6 @@ const AddCommercialLicensePage: React.FC = () => {
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                             </div>
-                            {/* Submit Button */}
                             <button
                                 type="submit"
                                 className="w-full py-3 px-4 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"

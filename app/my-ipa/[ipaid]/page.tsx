@@ -5,12 +5,10 @@ import Image from 'next/image';
 import { useAccount, usePublicClient } from 'wagmi';
 import LicenseDetails from '@/components/LicenseDetails';
 import AddCommercialLicenseButton from '@/components/AddCommercialLicenseButton';
-import { Abi} from 'viem';
 import { checksumAddress } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import MintLicenseTokensButton from '@/components/MintLicenseTokensButton';
-import { coreMetadataViewModuleAddress, coreMetadataViewModuleABI } from '@/abi/coreMetadataViewModule';
-import { readContracts } from '@/utils/readContracts';
+import { getIPAMetadata } from '@/utils/getIPAMetadata';
 
 interface PageProps {
   params: {
@@ -43,24 +41,6 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetadata = async (
-    ipaid: `0x${string}`
-  ): Promise<{
-    nftTokenURI: string;
-    nftMetadataHash: `0x${string}`;
-    metadataURI: string;
-    metadataHash: `0x${string}`;
-    registrationDate: number;
-    owner: `0x${string}`;
-  }> => {
-    const coreMetadata = await readContracts(
-      coreMetadataViewModuleAddress as `0x${string}`,
-      coreMetadataViewModuleABI as Abi,
-      "getCoreMetadata",
-      [ipaid]
-    );
-    return coreMetadata;
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,7 +53,7 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
           return;
         }
 
-        const assetData = await fetchMetadata(ipaid as `0x${string}`);
+        const assetData = await getIPAMetadata(ipaid as `0x${string}`);
 
         if (address && checksumAddress(address) === checksumAddress(assetData.owner)) {
           setIsOwner(true);

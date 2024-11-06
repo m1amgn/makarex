@@ -74,7 +74,8 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
         )
       );
 
-      setIpAssets(assets.filter((asset): asset is IPAsset => asset !== null));
+      const IPAssets = assets.filter((asset): asset is IPAsset => asset !== null)
+      setIpAssets(IPAssets);
       setLoading(false);
     } catch (error) {
       handleError("Error fetching IP assets", error);

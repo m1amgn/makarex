@@ -1,4 +1,8 @@
-Story client in utils
+Check owner in add-license-page, rewrite page on read contracts
+
+Learn about license, complite page
+
+Check owner in mint-license-tokent-page, rerwite page on read contracts
 
 Add page my-license-tokens https://docs.story.foundation/reference/post_api-v1-licenses-tokens
 
@@ -6,15 +10,12 @@ Add choose currence and get currence address from the object in utils.
 
 Add page with licences settings
 
-Divide create IPA trademarks and create IPA invention.
-
-If trademarks - classes in attributes or somewhere?
-
-If invention - upload pdf and attributes should be science fields.
-
 Learn:
 - about fields of metadata
 - about attributes
 - about PIL
 - about rules of using IP
 - about correction of rules after mint
+
+Refactoring AssetsList, make universal utils for fetching IPA
+Refactoring LicenseDetails, make universal utils for fetching IPA

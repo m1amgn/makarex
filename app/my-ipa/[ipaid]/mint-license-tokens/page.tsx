@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { checksumAddress } from 'viem';
-import { StoryClient, StoryConfig } from '@story-protocol/core-sdk';
-import { custom } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { notFound, useRouter } from 'next/navigation'
+import { setupStoryClient } from "@/utils/storyClient";
+
 
 interface PageProps {
     params: {
@@ -149,22 +148,10 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
         }
     };
 
-    const setupStoryClient = () => {
-        if (!wallet) return null;
-
-        const config: StoryConfig = {
-            wallet: wallet,
-            transport: custom(wallet.transport),
-            chainId: 'iliad',
-        };
-        const client = StoryClient.newClient(config);
-        return client;
-    };
-
     const handleMint = async () => {
         try {
             setIsProcessing(true);
-            const client = setupStoryClient();
+            const client = setupStoryClient(wallet);
             if (!client) {
                 setError('Client is not initialized');
                 setIsProcessing(false);
