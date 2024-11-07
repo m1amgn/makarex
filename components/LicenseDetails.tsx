@@ -5,6 +5,8 @@ import { readContracts } from '@/utils/readContracts';
 import { licenseRegistryAddress, licenseRegistryABI } from '@/abi/licenseRegistry';
 import { PILicenseTemplateAddress, PILicenseTemplateABI } from '@/abi/PILicenseTemplate';
 import { Abi } from 'viem';
+import { currencyTokensAddress } from '@/utils/currencyTokenAddress';  // Import your currency mapping
+
 
 interface LicenseDetailsProps {
   ipId: string;
@@ -18,7 +20,6 @@ interface License {
     max_value?: number;
   }>;
 }
-
 
 interface Terms {
   transferable: boolean;
@@ -44,10 +45,30 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedLicenseIds, setExpandedLicenseIds] = useState<string[]>([]);
 
-  const getLicenseTermsCount = async (
-    ipId: `0x${string}`
-  ): Promise<bigint> => {
+  // Tooltip dictionary for each field
+  const tooltips: Record<string, string> = {
+    'Transferable': 'If false, the License Token cannot be transferred once it is minted to a recipient address.',
+    'Royalty Policy': 'The address of the royalty policy contract. The royalty policy must have been approved by Story Protocol in advance.',
+    'Minting Fee': 'The fee to be paid when minting a license.',
+    'Expiration': 'The expiration period of the license.',
+    'Commercial Use': 'You can make money from using the original IP Asset, subject to limitations below.',
+    'Commercial Attribution': 'If true, people must give credit to the original work in their commercial application (eg. merch)',
+    'Commercializer Checker': 'Commercializers that are allowed to commercially exploit the original work. If zero address, then no restrictions are enforced.',
+    'Commercializer Checker Data': 'The data to be passed to the commercializer checker contract.',
+    'Commercial Rev Share': 'Amount of revenue (from any source, original & derivative) that must be shared with the licensor.',
+    'Commercial Rev Ceiling': 'This value determines the maximum revenue which licensee can earn from your original work.',
+    'Derivatives Allowed': 'Indicates whether the licensee can create derivatives of his work or not.',
+    'Derivatives Attribution': 'If true, derivatives that are made must give credit to the original work.',
+    'Derivatives Approval': 'If true, the licensor must approve derivatives of the work.',
+    'Derivatives Reciprocal': 'If true, derivatives of this derivative can be created indefinitely as long as they have the exact same terms.',
+    'Derivative Rev Ceiling': 'This value determines the maximum revenue which can be earned from derivative works.',
+    'Currency': 'The ERC20 token to be used to pay the minting fee.',
+    'URI': 'The URI of the license terms, which can be used to fetch off-chain license terms.',
+  };
+
+  const getLicenseTermsCount = async (ipId: `0x${string}`): Promise<bigint> => {
     return await readContracts(
       licenseRegistryAddress as `0x${string}`,
       licenseRegistryABI as Abi,
@@ -56,10 +77,7 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
     );
   };
 
-  const getAttachedLicenseTerms = async (
-    ipId: `0x${string}`,
-    index: number
-  ): Promise<number> => {
+  const getAttachedLicenseTerms = async (ipId: `0x${string}`, index: number): Promise<number> => {
     const licenseTerms = await readContracts(
       licenseRegistryAddress as `0x${string}`,
       licenseRegistryABI as Abi,
@@ -69,9 +87,7 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
     return Number(licenseTerms[1]);
   };
 
-  const getLicenseTerm = async (
-    attachedLicenseTerm: number,
-  ): Promise<Terms> => {
+  const getLicenseTerm = async (attachedLicenseTerm: number): Promise<Terms> => {
     return await readContracts(
       PILicenseTemplateAddress as `0x${string}`,
       PILicenseTemplateABI as Abi,
@@ -89,27 +105,27 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
 
         for (let index = 0; index < Number(licenseTermsCount); index++) {
           const attachedLicenseTermId = await getAttachedLicenseTerms(ipId as `0x${string}`, index);
-          const licenseTerm = await getLicenseTerm(attachedLicenseTermId as number); // attachedLicenseTermId уже в формате BigInt
+          const licenseTerm = await getLicenseTerm(attachedLicenseTermId as number);
           const license: License = {
             id: attachedLicenseTermId.toString(),
             licenseTerms: [
-              { trait_type: 'Transferable', value: licenseTerm.transferable.toString() },
-              { trait_type: 'Royalty Policy', value: licenseTerm.royaltyPolicy },
-              { trait_type: 'Default Minting Fee', value: licenseTerm.defaultMintingFee.toString() },
-              { trait_type: 'Expiration', value: licenseTerm.expiration.toString() },
               { trait_type: 'Commercial Use', value: licenseTerm.commercialUse.toString() },
-              { trait_type: 'Commercial Attribution', value: licenseTerm.commercialAttribution.toString() },
-              { trait_type: 'Commercializer Checker', value: licenseTerm.commercializerChecker },
-              { trait_type: 'Commercializer Checker Data', value: licenseTerm.commercializerCheckerData },
-              { trait_type: 'Commercial Rev Share', value: licenseTerm.commercialRevShare },
-              { trait_type: 'Commercial Rev Ceiling', value: licenseTerm.commercialRevCeiling.toString() },
+              { trait_type: 'Transferable', value: licenseTerm.transferable.toString() },
               { trait_type: 'Derivatives Allowed', value: licenseTerm.derivativesAllowed.toString() },
               { trait_type: 'Derivatives Attribution', value: licenseTerm.derivativesAttribution.toString() },
               { trait_type: 'Derivatives Approval', value: licenseTerm.derivativesApproval.toString() },
               { trait_type: 'Derivatives Reciprocal', value: licenseTerm.derivativesReciprocal.toString() },
+              // { trait_type: 'Expiration', value: licenseTerm.expiration.toString() },
+              { trait_type: 'Commercial Attribution', value: licenseTerm.commercialAttribution.toString() },
+              // { trait_type: 'Commercializer Checker', value: licenseTerm.commercializerChecker },
+              // { trait_type: 'Commercializer Checker Data', value: licenseTerm.commercializerCheckerData },
+              { trait_type: 'Minting Fee', value: licenseTerm.defaultMintingFee.toString() },
+              { trait_type: 'Commercial Rev Share', value: licenseTerm.commercialRevShare },
+              { trait_type: 'Commercial Rev Ceiling', value: licenseTerm.commercialRevCeiling.toString() },
               { trait_type: 'Derivative Rev Ceiling', value: licenseTerm.derivativeRevCeiling.toString() },
               { trait_type: 'Currency', value: licenseTerm.currency },
-              { trait_type: 'URI', value: licenseTerm.uri },
+              { trait_type: 'Royalty Policy', value: licenseTerm.royaltyPolicy },
+              // { trait_type: 'URI', value: licenseTerm.uri },
             ]
           };
 
@@ -127,6 +143,21 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
     fetchLicenses();
   }, [ipId]);
 
+  const toggleLicenseDetails = (licenseId: string) => {
+    setExpandedLicenseIds(prev =>
+      prev.includes(licenseId)
+        ? prev.filter(id => id !== licenseId)
+        : [...prev, licenseId]
+    );
+  };
+
+  const getCurrencySymbol = (address: string) => {
+    const entry = Object.entries(currencyTokensAddress).find(
+      ([, tokenAddress]) => tokenAddress === address
+    );
+    return entry ? entry[0] : address; // Returns symbol if found, otherwise address
+  };
+
   if (loading) {
     return <div>Loading license details...</div>;
   }
@@ -140,21 +171,44 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId }) => {
   }
 
   return (
-    <div className="mt-6">
-      <h3 className="text-xl font-bold mb-4">Licenses</h3>
-      {licenses.map((license, index) => (
-        <div key={index} className="bg-gray-100 p-4 rounded mb-4">
-          <h4 className="text-lg font-semibold mb-2">
-            License ID: {license.id} {license.id === '1' ? '(Non commercial)' : '(Commercial)'}
+    <div className="mt-6 space-y-4">
+      {licenses.map((license) => (
+        <div key={license.id} className="p-4 rounded shadow-sm">
+          <h4
+            className="text-lg font-semibold mb-2 cursor-pointer text-gray-800"
+            onClick={() => toggleLicenseDetails(license.id)}
+          >
+            License ID: {license.id} {license.id === '1' ? '(Non-commercial)' : '(Commercial)'}
           </h4>
-          <ul className="list-disc list-inside">
-            {license.licenseTerms.map((term, termIndex) => (
-              <li key={termIndex}>
-                <strong>{term.trait_type}:</strong> {term.value}
-                {term.max_value ? ` (Max: ${term.max_value})` : ''}
-              </li>
-            ))}
-          </ul>
+          {expandedLicenseIds.includes(license.id) && (
+            <div className="space-y-2 mt-4">
+              {license.licenseTerms.map((term, termIndex) => (
+                <div
+                  key={termIndex}
+                  className="flex justify-between items-center border-b pb-2 mb-2"
+                  title={tooltips[term.trait_type] || ''}
+                >
+                  <span className="font-medium text-gray-700" title={tooltips[term.trait_type]}>
+                    {term.trait_type}:
+                  </span>
+                  <span className="text-gray-900">
+                    {term.trait_type === 'Currency'
+                      ? getCurrencySymbol(term.value as string)
+                      : term.value.toString()}
+                    {term.max_value ? ` (Max: ${term.max_value})` : ''}
+                  </span>
+
+                </div>
+              ))}
+              <div className="">
+                <span className="font-medium text-gray-700">
+                  {license.id !== '1'
+                    ? <p>License Legal Text: <a className='underline mt-8' href='https://github.com/storyprotocol/protocol-core-v1/blob/main/PIL_Testnet.pdf'>https://github.com/storyprotocol/protocol-core-v1/blob/main/PIL_Testnet.pdf</a></p> : ''
+                  }
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

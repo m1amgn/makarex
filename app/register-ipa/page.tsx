@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { setupStoryClient } from "@/utils/storyClient";
 import { uploadFileToIPFS } from "@/utils/uploadFileToIPFS";
 import { uploadJSONToIPFS } from "@/utils/uploadJSONToIPFS";
+import { currencyTokensAddress } from "@/utils/currencyTokenAddress";
+
 
 
 const CreateIpaPage: React.FC = () => {
@@ -78,6 +80,8 @@ const CreateIpaPage: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
+
+    if (name === "currency") return;
 
     if (type === "checkbox") {
       setFormData((prev) => ({ ...prev, [name]: checked }));
@@ -495,7 +499,7 @@ const CreateIpaPage: React.FC = () => {
               {formData.commercialLicense && (
                 <div className="mt-4">
                   <p className="text-sm text-red-700 mb-6">
-                    Select the standard license terms or uncheck Commercial License and add custom terms after registering your asset. <strong>You can add custom terms on your asset's My IPA page.</strong>
+                    You can select the standard license terms or uncheck Commercial License and make custom terms after registering your asset. <strong>You can add custom terms on your asset's My IPA page.</strong>
                   </p>
                   <div className="flex space-x-4">
                     <label
@@ -573,17 +577,31 @@ const CreateIpaPage: React.FC = () => {
                   )}
                   {formData.licenseType && (
                     <div>
-                      <input
-                        type="text"
+                      <label className="block text-sm font-medium text-gray-700 mt-2">
+                        Currency (Token Address)
+                      </label>
+                      <select
                         name="currency"
-                        placeholder="Currency (Token Address)"
-                        value={formData.currency}
-                        onChange={handleFormChange}
+                        value={
+                          Object.keys(currencyTokensAddress).find(
+                            key => currencyTokensAddress[key as keyof typeof currencyTokensAddress] === formData.currency
+                          ) || "SUSD" // Default selection
+                        }
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            currency: currencyTokensAddress[e.target.value as keyof typeof currencyTokensAddress],
+                          }))
+                        }
                         required
-                        pattern="^0x[a-fA-F0-9]{40}$"
-                        title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
-                        className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                      />
+                        className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                      >
+                        {Object.keys(currencyTokensAddress).map((token) => (
+                          <option key={token} value={token}>
+                            {token}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   )}
                 </div>

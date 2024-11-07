@@ -1,7 +1,3 @@
-Check owner in add-license-page, rewrite page on read contracts
-
-Learn about license, complite page
-
 Check owner in mint-license-tokent-page, rerwite page on read contracts
 
 Add page my-license-tokens https://docs.story.foundation/reference/post_api-v1-licenses-tokens
@@ -17,5 +13,3 @@ Learn:
 - about rules of using IP
 - about correction of rules after mint
 
-Refactoring AssetsList, make universal utils for fetching IPA
-Refactoring LicenseDetails, make universal utils for fetching IPA

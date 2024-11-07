@@ -1,0 +1,4 @@
+export const currencyTokensAddress = {
+    "SUSD": "0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5",
+    "WIP": "0x1516000000000000000000000000000000000000"
+} as const;

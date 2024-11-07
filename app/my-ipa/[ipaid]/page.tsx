@@ -23,6 +23,7 @@ interface nftTokenData {
 }
 
 interface IPAMetadata {
+  uri: string;
   title: string;
   description: string;
   attributes: Array<{
@@ -34,8 +35,9 @@ interface IPAMetadata {
 const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
   const { ipaid } = params;
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
   const [nftTokenData, setNftTokenData] = useState<nftTokenData | null>(null);
+  const [nftTokenMetadataURI, setNftTokenMetadataURI] = useState<string | null>(null);
+  const [IPAMetadataUri, setIPAMetadataUri] = useState<string | null>(null);
   const [IPAMetadata, setIPAMetadata] = useState<IPAMetadata | null>(null);
   const [isOwner, setIsOwner] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -66,11 +68,14 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
           setIsLoading(false);
           return;
         }
+        setNftTokenMetadataURI(assetData.nftTokenURI);
+        setIPAMetadataUri(assetData.metadataURI);
 
         const tokenURIResponse = await fetch(assetData.nftTokenURI);
         if (!tokenURIResponse.ok) {
           throw new Error(`Failed to fetch token URI metadata for ${assetData.nftTokenURI}`);
         }
+
         const tokenURIData = await tokenURIResponse.json();
 
         if (!tokenURIData.name || !tokenURIData.image) {
@@ -83,6 +88,7 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
           throw new Error(`Failed to fetch metadata URI for ${assetData.metadataURI}`);
         }
         const metadataURIData = await metadataURIResponse.json();
+
 
         if (!metadataURIData.title || !metadataURIData.attributes) {
           throw new Error("Invalid metadata URI structure.");
@@ -113,40 +119,68 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
         <ConnectButton />
       </div>
       <div className="container mx-auto p-8">
-        {isConnected && address && isOwner && (
-          <>
-            <AddCommercialLicenseButton assetId={ipaid} />
-            <MintLicenseTokensButton assetId={ipaid} />
-          </>
-        )}
         <div className="bg-white shadow rounded p-8">
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="mb-6 flex flex-col md:flex-row gap-8">
             <div className="relative w-full md:w-1/2 h-48 md:h-64 lg:h-80">
               <Image
                 src={nftTokenData.image}
                 alt={nftTokenData.name}
                 fill
-                className="object-contain object-center rounded mb-4"
+                className="object-contain object-left rounded mb-4"
                 sizes="(max-width: 768px) 100vw,
                      (max-width: 1200px) 50vw,
                      33vw"
               />
             </div>
+            
             <div className="md:w-1/2">
               <h2 className="text-2xl font-bold mb-2">{nftTokenData.name}</h2>
               <p className="text-gray-700 mb-2">{nftTokenData.description}</p>
-              <h4 className="text-lg font-bold mt-4 mb-2">Metadata:</h4>
-              <p className="mb-2">
-                <strong>Title:</strong> {IPAMetadata.title}
+              <p className="mb-2 mt-8">
+                <a
+                  href={`https://odyssey.explorer.story.foundation/ipa/${ipaid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-400 hover:underline"
+                >
+                  <strong>IPA in Story Protocol Explorer</strong>
+                </a>
               </p>
               <p className="mb-2">
-                <strong>Description:</strong> {IPAMetadata.description}
+                <a
+                  href={nftTokenMetadataURI || ''}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-400 hover:underline"
+                >
+                  <strong>NFT Data URI</strong>
+                </a>
+              </p>
+              <p className="mb-8">
+                <a
+                  href={IPAMetadataUri || ''}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-400 hover:underline"
+                >
+                  <strong>IPA Data URI</strong>
+                </a>
+              </p>
+
+              <p className="mb-2">
+                <strong>IPA Address:</strong> {ipaid}
+              </p>
+              {/* <p className="mb-2">
+                <strong>IPA Title:</strong> {IPAMetadata.title}
               </p>
               <p className="mb-2">
-                <strong>Attributes:</strong>
+                <strong>IPA Description:</strong> {IPAMetadata.description}
+              </p> */}
+              <p className="mb-2 mt-8">
+                <strong>IPA Attributes:</strong>
               </p>
               {IPAMetadata.attributes && IPAMetadata.attributes.length > 0 ? (
-                <ul className="list-disc list-inside ml-4">
+                <ul className="list-disc list-inside ml-4 mb-6">
                   {IPAMetadata.attributes.map((attr, index) => (
                     <li key={index}>
                       <strong>{attr.key}:</strong> {attr.value}
@@ -156,8 +190,15 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
               ) : (
                 <p>No attributes available.</p>
               )}
+              
             </div>
           </div>
+          {isConnected && address && isOwner && (
+            <div className='text-left rounded mb-4'>
+              <AddCommercialLicenseButton assetId={ipaid} />
+              <MintLicenseTokensButton assetId={ipaid} />
+            </div>
+          )}
           <LicenseDetails ipId={ipaid} />
         </div>
       </div>

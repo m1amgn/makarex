@@ -8,32 +8,13 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { setupStoryClient } from "@/utils/storyClient";
 import { checksumAddress } from "viem";
 import { getIPAOwner } from "@/utils/getIPAOwner";
+import { currencyTokensAddress } from "@/utils/currencyTokenAddress";
 
 
 interface PageProps {
     params: {
         ipaid: string;
     };
-}
-
-interface formData {
-    defaultMintingFee: string;
-    currency: `0x${string}`;
-    royaltyPolicy: `0x${string}`;
-    transferable: boolean;
-    expiration: string;
-    commercialUse: boolean;
-    commercialAttribution: boolean;
-    commercializerChecker: `0x${string}`;
-    commercializerCheckerData: `0x${string}`;
-    commercialRevShare: string;
-    commercialRevCeiling: string;
-    derivativesAllowed: boolean;
-    derivativesAttribution: boolean;
-    derivativesApproval: boolean;
-    derivativesReciprocal: boolean;
-    derivativeRevCeiling: string;
-    uri: string;
 }
 
 const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
@@ -45,24 +26,24 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [formData, setFormData] = useState<formData>({
-        defaultMintingFee: "0",
+    const [formData, setFormData] = useState<LicenseTerms>({
+        defaultMintingFee: BigInt(0),
         currency: "0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5",
         royaltyPolicy: "0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6",
-        transferable: false,
-        expiration: "0",
-        commercialUse: false,
-        commercialAttribution: false,
+        transferable: true,
+        expiration: BigInt(0),
+        commercialUse: true,
+        commercialAttribution: true,
         commercializerChecker: "0x0000000000000000000000000000000000000000",
         commercializerCheckerData: "0x" as `0x${string}`,
-        commercialRevShare: "0",
-        commercialRevCeiling: "0",
-        derivativesAllowed: false,
-        derivativesAttribution: false,
-        derivativesApproval: false,
-        derivativesReciprocal: false,
-        derivativeRevCeiling: "0",
-        uri: "https://ipfs.io",
+        commercialRevShare: Number(0),
+        commercialRevCeiling: BigInt(0),
+        derivativesAllowed: true,
+        derivativesAttribution: true,
+        derivativesApproval: true,
+        derivativesReciprocal: true,
+        derivativeRevCeiling: BigInt(0),
+        uri: "",
     });
 
     useEffect(() => {
@@ -83,7 +64,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                         setIsOwner(false);
                     }
                 } else {
-                    console.error("Didn't get owner address from contract.")
+                    console.error("Have not get owner address from contract.")
                 }
             } catch (err) {
                 console.error('Error checking owner:', err);
@@ -105,7 +86,10 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
         } else {
             let updatedValue = value;
 
-            if (name === "currency" || name === "commercializerChecker" || name === "commercializerCheckerData") {
+            if (name === "currency") {
+                updatedValue = currencyTokensAddress[value as keyof typeof currencyTokensAddress];
+                console.log(updatedValue);
+            } else if (name === "commercializerChecker" || name === "commercializerCheckerData") {
                 if (!updatedValue.startsWith("0x")) {
                     updatedValue = "0x" + updatedValue;
                 }
@@ -155,7 +139,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                 commercialAttribution: formData.commercialAttribution,
                 commercializerChecker: formData.commercializerChecker,
                 commercializerCheckerData: formData.commercializerCheckerData,
-                commercialRevShare: parseInt(formData.commercialRevShare, 10),
+                commercialRevShare: formData.commercialRevShare,
                 commercialRevCeiling: BigInt(formData.commercialRevCeiling),
                 derivativesAllowed: formData.derivativesAllowed,
                 derivativesAttribution: formData.derivativesAttribution,
@@ -182,6 +166,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
             setIsLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
@@ -216,36 +201,178 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                             Add Commercial License
                         </h1>
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Currency (Token Address)
-                                </label>
+                            <div className="flex items-center">
                                 <input
-                                    type="text"
-                                    name="currency"
-                                    value={formData.currency}
+                                    type="checkbox"
+                                    id="commercialUse"
+                                    name="commercialUse"
+                                    checked={formData.commercialUse}
                                     onChange={handleChange}
-                                    required
-                                    pattern="^0x[a-fA-F0-9]{40}$"
-                                    title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
-                                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="You can make money from using the original IP Asset, subject to limitations below."
+                                    disabled
                                 />
+                                <label
+                                    htmlFor="commercialUse"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="You can make money from using the original IP Asset, subject to limitations below."
+                                >
+                                    Commercial Use
+                                </label>
+                            </div>
+
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="transferable"
+                                    name="transferable"
+                                    checked={formData.transferable}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="If not, the License Token cannot be transferred once it is minted to a recipient address."
+                                />
+                                <label
+                                    htmlFor="transferable"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="If not, the License Token cannot be transferred once it is minted to a recipient address."
+                                >
+                                    Transferable
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="commercialAttribution"
+                                    name="commercialAttribution"
+                                    checked={formData.commercialAttribution}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="If true, people must give credit to the original work in their commercial application (eg. merch)"
+                                />
+                                <label
+                                    htmlFor="commercialAttribution"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="If true, people must give credit to the original work in their commercial application (eg. merch)"
+                                >
+                                    Commercial Attribution
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="derivativesAllowed"
+                                    name="derivativesAllowed"
+                                    checked={formData.derivativesAllowed}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="Indicates whether the licensee can create derivatives of his work or not."
+                                />
+                                <label
+                                    htmlFor="derivativesAllowed"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="Indicates whether the licensee can create derivatives of his work or not."
+                                >
+                                    Derivatives Allowed
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="derivativesAttribution"
+                                    name="derivativesAttribution"
+                                    checked={formData.derivativesAttribution}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="If yes, derivatives that are made must give credit to the original work."
+                                />
+                                <label
+                                    htmlFor="derivativesAttribution"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="If yes, derivatives that are made must give credit to the original work."
+                                >
+                                    Derivatives Attribution
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="derivativesApproval"
+                                    name="derivativesApproval"
+                                    checked={formData.derivativesApproval}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="If true, the licensor must approve derivatives of the work."
+                                />
+                                <label
+                                    htmlFor="derivativesApproval"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="If true, the licensor must approve derivatives of the work."
+                                >
+                                    Derivatives Approval
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="derivativesReciprocal"
+                                    name="derivativesReciprocal"
+                                    checked={formData.derivativesReciprocal}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="If true, derivatives of this derivative can be created indefinitely as long as they have the exact same terms."
+                                />
+                                <label
+                                    htmlFor="derivativesReciprocal"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="If true, derivatives of this derivative can be created indefinitely as long as they have the exact same terms."
+
+                                >
+                                    Derivatives Reciprocal
+                                </label>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Default Minting Fee (in Wei)
+                                <label
+                                    className="block text-sm font-medium text-gray-700"
+                                    title="The ERC20 token to be used to pay the minting fee.">
+                                    Currency
+                                </label>
+                                <select
+                                    name="currency"
+                                    title="The ERC20 token to be used to pay the minting fee."
+                                    value={
+                                        Object.keys(currencyTokensAddress).find(
+                                            key => currencyTokensAddress[key as keyof typeof currencyTokensAddress] === formData.currency
+                                        ) || "SUSD" // Default to "SUSD"
+                                    }
+                                    onChange={handleChange}
+                                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    {Object.keys(currencyTokensAddress).map((token) => (
+                                        <option key={token} value={token}>
+                                            {token}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    className="block text-sm font-medium text-gray-700"
+                                    title="The fee to be paid when minting a license."
+                                >
+                                    Minting Fee (in currency)
                                 </label>
                                 <input
                                     type="number"
                                     name="defaultMintingFee"
-                                    value={formData.defaultMintingFee}
+                                    value={formData.defaultMintingFee.toString()}
                                     onChange={handleChange}
                                     min="0"
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    title="The fee to be paid when minting a license."
                                 />
                             </div>
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Royalty Policy
                                 </label>
@@ -258,24 +385,8 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     title="Enter a valid token contract address starting with 0x followed by 40 hexadecimal characters."
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="transferable"
-                                    name="transferable"
-                                    checked={formData.transferable}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="transferable"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Transferable
-                                </label>
-                            </div>
-                            <div>
+                            </div> */}
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Expiration (Unix Timestamp)
                                 </label>
@@ -288,40 +399,9 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="commercialUse"
-                                    name="commercialUse"
-                                    checked={formData.commercialUse}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="commercialUse"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Commercial Use
-                                </label>
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="commercialAttribution"
-                                    name="commercialAttribution"
-                                    checked={formData.commercialAttribution}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="commercialAttribution"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Commercial Attribution
-                                </label>
-                            </div>
-                            <div>
+                            </div> */}
+
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Commercializer Checker Address
                                 </label>
@@ -335,8 +415,8 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     title="Enter a valid contract address starting with 0x followed by 40 hexadecimal characters."
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                            </div>
-                            <div>
+                            </div> */}
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     Commercializer Checker Data (Hex String)
                                 </label>
@@ -350,9 +430,12 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     title="Enter a valid hex string starting with 0x."
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                            </div>
+                            </div> */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
+                                <label
+                                    className="block text-sm font-medium text-gray-700"
+                                    title="Amount of revenue (from any source, original & derivative) that must be shared with the licensor."
+                                >
                                     Commercial Revenue Share (%)
                                 </label>
                                 <input
@@ -364,101 +447,46 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     max="100"
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    title="Amount of revenue (from any source, original & derivative) that must be shared with the licensor."
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Commercial Revenue Ceiling (in Wei)
+                                <label
+                                    className="block text-sm font-medium text-gray-700"
+                                    title="This value determines the maximum revenue which licensee can earn from your original work."
+                                >
+                                    Commercial Revenue Ceiling (in currency)
                                 </label>
                                 <input
                                     type="number"
                                     name="commercialRevCeiling"
-                                    value={formData.commercialRevCeiling}
+                                    value={formData.commercialRevCeiling.toString()}
                                     onChange={handleChange}
                                     min="0"
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    title="This value determines the maximum revenue which licensee can earn from your original work."
                                 />
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="derivativesAllowed"
-                                    name="derivativesAllowed"
-                                    checked={formData.derivativesAllowed}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="derivativesAllowed"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Derivatives Allowed
-                                </label>
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="derivativesAttribution"
-                                    name="derivativesAttribution"
-                                    checked={formData.derivativesAttribution}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="derivativesAttribution"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Derivatives Attribution
-                                </label>
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="derivativesApproval"
-                                    name="derivativesApproval"
-                                    checked={formData.derivativesApproval}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="derivativesApproval"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Derivatives Approval
-                                </label>
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    id="derivativesReciprocal"
-                                    name="derivativesReciprocal"
-                                    checked={formData.derivativesReciprocal}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                />
-                                <label
-                                    htmlFor="derivativesReciprocal"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                >
-                                    Derivatives Reciprocal
-                                </label>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Derivative Revenue Ceiling (in Wei)
+                                <label
+                                    className="block text-sm font-medium text-gray-700"
+                                    title="This value determines the maximum revenue which can be earned from derivative works."
+                                >
+                                    Derivative Revenue Ceiling (in currency)
                                 </label>
                                 <input
                                     type="number"
                                     name="derivativeRevCeiling"
-                                    value={formData.derivativeRevCeiling}
+                                    value={formData.derivativeRevCeiling.toString()}
                                     onChange={handleChange}
                                     min="0"
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                    title="This value determines the maximum revenue which can be earned from derivative works."
                                 />
                             </div>
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium text-gray-700">
                                     License URI
                                 </label>
@@ -470,7 +498,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                 />
-                            </div>
+                            </div> */}
                             <button
                                 type="submit"
                                 className="w-full py-3 px-4 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
