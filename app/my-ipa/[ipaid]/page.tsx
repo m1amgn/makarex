@@ -119,6 +119,11 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
         <ConnectButton />
       </div>
       <div className="container mx-auto p-8">
+      {isConnected && address && isOwner && (
+            <div className='text-left rounded mb-4'>
+              <AddCommercialLicenseButton assetId={ipaid} />
+            </div>
+          )}
         <div className="bg-white shadow rounded p-8">
           <div className="mb-6 flex flex-col md:flex-row gap-8">
             <div className="relative w-full md:w-1/2 h-48 md:h-64 lg:h-80">
@@ -193,13 +198,7 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
               
             </div>
           </div>
-          {isConnected && address && isOwner && (
-            <div className='text-left rounded mb-4'>
-              <AddCommercialLicenseButton assetId={ipaid} />
-              <MintLicenseTokensButton assetId={ipaid} />
-            </div>
-          )}
-          <LicenseDetails ipId={ipaid} />
+          <LicenseDetails ipId={ipaid} isConnected={isConnected} isOwner={isOwner} />
         </div>
       </div>
     </>

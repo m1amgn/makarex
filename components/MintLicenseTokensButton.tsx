@@ -1,20 +1,24 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 
 interface MintLicenseTokensButtonProps {
-  assetId: string;
+  ipId: string;
+  licenseTermsId: string;
 }
 
-const MintLicenseTokensButton: React.FC<MintLicenseTokensButtonProps> = ({ assetId }) => {
+const MintLicenseTokensButton: React.FC<MintLicenseTokensButtonProps> = ({ ipId, licenseTermsId }) => {
+  const router = useRouter();
+
   return (
-    <Link
-      href={`${assetId}/mint-license-tokens/`}
-      className="inline-block mr-4 mt-4 px-4 py-2 bg-indigo-600 text-white font-semibold rounded hover:bg-indigo-700 transition duration-300"
+    <button
+      className="bg-indigo-600 text-white font-semibold mt-4 px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
+      onClick={() => router.push(`/my-ipa/${ipId}/mint-license-tokens/${licenseTermsId}`)}
     >
-      Mint License Tokens
-    </Link>
+      Mint License Token
+    </button>
   );
 };
 

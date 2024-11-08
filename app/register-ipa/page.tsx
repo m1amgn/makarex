@@ -37,7 +37,7 @@ const CreateIpaPage: React.FC = () => {
     licenseType: null,
     revenueShare: "",
     mintFee: "",
-    currency: "",
+    currency: currencyTokensAddress["SUSD"] || "",
   });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,8 +80,6 @@ const CreateIpaPage: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
-
-    if (name === "currency") return;
 
     if (type === "checkbox") {
       setFormData((prev) => ({ ...prev, [name]: checked }));
@@ -571,7 +569,6 @@ const CreateIpaPage: React.FC = () => {
                         required
                         className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                         min="0"
-                        max="100"
                       />
                     </div>
                   )}
@@ -585,7 +582,7 @@ const CreateIpaPage: React.FC = () => {
                         value={
                           Object.keys(currencyTokensAddress).find(
                             key => currencyTokensAddress[key as keyof typeof currencyTokensAddress] === formData.currency
-                          ) || "SUSD" // Default selection
+                          ) || "SUSD"
                         }
                         onChange={(e) =>
                           setFormData((prev) => ({

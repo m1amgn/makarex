@@ -40,7 +40,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
         commercialRevCeiling: BigInt(0),
         derivativesAllowed: true,
         derivativesAttribution: true,
-        derivativesApproval: true,
+        derivativesApproval: false,
         derivativesReciprocal: true,
         derivativeRevCeiling: BigInt(0),
         uri: "",
@@ -296,24 +296,6 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                             <div className="flex items-center">
                                 <input
                                     type="checkbox"
-                                    id="derivativesApproval"
-                                    name="derivativesApproval"
-                                    checked={formData.derivativesApproval}
-                                    onChange={handleChange}
-                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
-                                    title="If true, the licensor must approve derivatives of the work."
-                                />
-                                <label
-                                    htmlFor="derivativesApproval"
-                                    className="ml-3 text-sm font-medium text-gray-700"
-                                    title="If true, the licensor must approve derivatives of the work."
-                                >
-                                    Derivatives Approval
-                                </label>
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
                                     id="derivativesReciprocal"
                                     name="derivativesReciprocal"
                                     checked={formData.derivativesReciprocal}
@@ -328,6 +310,24 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
 
                                 >
                                     Derivatives Reciprocal
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="derivativesApproval"
+                                    name="derivativesApproval"
+                                    checked={formData.derivativesApproval}
+                                    onChange={handleChange}
+                                    className="h-5 w-5 text-indigo-600 border-gray-300 rounded"
+                                    title="If true, the licensor must approve derivatives of the work."
+                                />
+                                <label
+                                    htmlFor="derivativesApproval"
+                                    className="ml-3 text-sm font-medium text-gray-700"
+                                    title="If true, the licensor must approve derivatives of the work."
+                                >
+                                    Derivatives Approval
                                 </label>
                             </div>
                             <div>
@@ -453,7 +453,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                             <div>
                                 <label
                                     className="block text-sm font-medium text-gray-700"
-                                    title="This value determines the maximum revenue which licensee can earn from your original work."
+                                    title="This value determines the maximum revenue which licensee can earn from your original work. Leave 0 if not limited."
                                 >
                                     Commercial Revenue Ceiling (in currency)
                                 </label>
@@ -465,13 +465,13 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     min="0"
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                    title="This value determines the maximum revenue which licensee can earn from your original work."
+                                    title="This value determines the maximum revenue which licensee can earn from your original work. Leave 0 if not limited."
                                 />
                             </div>
                             <div>
                                 <label
                                     className="block text-sm font-medium text-gray-700"
-                                    title="This value determines the maximum revenue which can be earned from derivative works."
+                                    title="This value determines the maximum revenue which can be earned from derivative works. Leave 0 if not limited."
                                 >
                                     Derivative Revenue Ceiling (in currency)
                                 </label>
@@ -483,7 +483,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     min="0"
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-                                    title="This value determines the maximum revenue which can be earned from derivative works."
+                                    title="This value determines the maximum revenue which can be earned from derivative works. Leave 0 if not limited."
                                 />
                             </div>
                             {/* <div>
