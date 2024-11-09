@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect, CSSProperties } from 'react';
+import React, { useState, useRef, CSSProperties } from 'react';
 
 interface TooltipProps {
   text: string;

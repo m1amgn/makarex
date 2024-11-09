@@ -1,6 +1,6 @@
 import { coreMetadataViewModuleABI, coreMetadataViewModuleAddress } from "@/abi/coreMetadataViewModule";
 import { Abi } from "viem";
-import { readContracts } from "./readContracts";
+import { readContracts } from "@/utils/get-data/readContracts";
 
 export const getIPAOwner = async (ipaid: `0x${string}`): Promise<`0x${string}` | undefined> => {
     const owner = await readContracts(

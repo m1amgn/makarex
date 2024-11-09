@@ -6,10 +6,4 @@ Add choose currence and get currence address from the object in utils.
 
 Add page with licences settings
 
-Learn:
-- about fields of metadata
-- about attributes
-- about PIL
-- about rules of using IP
-- about correction of rules after mint
-
+Add API KEYS for api get requests

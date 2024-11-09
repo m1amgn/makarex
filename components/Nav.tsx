@@ -17,6 +17,9 @@ const Nav: React.FC = () => {
                     <Link href="/register-ipa" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
                         Register IPA
                     </Link>
+                    <Link href="/market" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
+                        Market
+                    </Link>
                 </div>
             </div>
         </nav>

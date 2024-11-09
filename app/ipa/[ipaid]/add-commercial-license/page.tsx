@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 import { useAccount, useWalletClient } from "wagmi";
 import { LicenseTerms } from "@story-protocol/core-sdk";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { setupStoryClient } from "@/utils/storyClient";
+import { setupStoryClient } from "@/utils/resources/storyClient";
 import { checksumAddress } from "viem";
-import { getIPAOwner } from "@/utils/getIPAOwner";
-import { currencyTokensAddress } from "@/utils/currencyTokenAddress";
+import { getIPAOwner } from "@/utils/get-data/getIPAOwner";
+import { currencyTokensAddress } from "@/utils/resources/currencyTokenAddress";
+import BackToIPAButton from "@/components/buttons/BackToIPAButton";
 
 
 interface PageProps {
     params: {
-        ipaid: string;
+        ipaid: `0x${string}`;
     };
 }
 
@@ -167,16 +168,10 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
         }
     };
 
-
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
             <div className="flex justify-between items-center mb-4">
-                <button
-                    onClick={() => router.push(`/my-ipa/${ipaid}`)}
-                    className="py-2 px-4 rounded-md bg-gray-100 text-gray-700 font-semibold hover:bg-gray-300 transition duration-300"
-                >
-                    Back
-                </button>
+                <BackToIPAButton ipaid={ipaid} />
                 <ConnectButton />
             </div>
             <div className="max-w-lg w-full mx-auto bg-white rounded-lg shadow-lg p-6">

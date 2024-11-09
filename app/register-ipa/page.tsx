@@ -6,10 +6,12 @@ import { useAccount, useWalletClient } from "wagmi";
 import { createHash } from "crypto";
 import { IpMetadata, PIL_TYPE } from "@story-protocol/core-sdk";
 import { useRouter } from 'next/navigation';
-import { setupStoryClient } from "@/utils/storyClient";
-import { uploadFileToIPFS } from "@/utils/uploadFileToIPFS";
-import { uploadJSONToIPFS } from "@/utils/uploadJSONToIPFS";
-import { currencyTokensAddress } from "@/utils/currencyTokenAddress";
+import { setupStoryClient } from "@/utils/resources/storyClient";
+import { uploadFileToIPFS } from "@/utils/api-utils/uploadFileToIPFS";
+import { uploadJSONToIPFS } from "@/utils/api-utils/uploadJSONToIPFS";
+import { currencyTokensAddress } from "@/utils/resources/currencyTokenAddress";
+import { getNftContract } from "@/utils/api-utils/getNftContract";
+import { updateNftContract } from "@/utils/api-utils/updateNftContract";
 
 
 
@@ -58,12 +60,9 @@ const CreateIpaPage: React.FC = () => {
     const fetchNftContract = async () => {
       if (isConnected && address) {
         try {
-          const response = await fetch(
-            `/api/get_nft_contract_by_address?address=${address}`
-          );
-          const data = await response.json();
-          if (data.nftContract) {
-            setNftContract(data.nftContract);
+          const nftContract = await getNftContract(address)
+          if (nftContract) {
+            setNftContract(nftContract);
           } else {
             setNeedsCollection(true);
           }
@@ -121,21 +120,11 @@ const CreateIpaPage: React.FC = () => {
     });
   };
 
-  const updateNftOwners = async (address: string, nftContract: string) => {
+  const updateNftOwners = async (address: `0x${string}`, nftContract: `0x${string}`) => {
     try {
-      const response = await fetch("/api/get_nft_contract_by_address", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          'x-api-key': process.env.NEXT_PUBLIC_API_KEY_SET_OWNER_NFT_CONTRACT as string,
-        },
-        body: JSON.stringify({ address, nftContract }),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Failed to update NFT owners.");
+      const response = await updateNftContract(address, nftContract)
+      if (!response.success) {
+        throw new Error(response.error || "Failed to update NFT owners.");
       }
     } catch (error: any) {
       console.error("Error updating NFT owners:", error);

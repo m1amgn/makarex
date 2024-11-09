@@ -4,8 +4,12 @@ import React, { useEffect, useState } from "react";
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
 import { Abi } from "viem";
-import { readContracts } from "@/utils/readContracts";
+import { readContracts } from "@/utils/get-data/readContracts";
 import { spgTokenContractAbi } from "@/abi/spgTokenContract";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import { Navigation } from "swiper/modules";
 import {
   IPAssetRegistryContractAddress,
   IPAssetRegistryContractABI,
@@ -14,11 +18,14 @@ import {
   coreMetadataViewModuleABI,
   coreMetadataViewModuleAddress,
 } from "@/abi/coreMetadataViewModule";
+import { getNftContract } from "@/utils/api-utils/getNftContract";
+import { getLicenseTermsData } from "@/utils/get-data/getLicenseTermsData";
 
 interface IPAsset {
   id: string;
   name: string;
   imageUrl: string;
+  licenseId?: number;
 }
 
 interface IPAssetsListProps {
@@ -29,6 +36,7 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
   const [ipAssets, setIpAssets] = useState<IPAsset[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCommercialOnly, setShowCommercialOnly] = useState<boolean>(false); // Filter state
   const router = useRouter();
 
   useEffect(() => {
@@ -37,9 +45,9 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
 
   const fetchNFTContract = async () => {
     try {
-      const data = await fetchContract(address);
-      if (data?.nftContract) {
-        await fetchIPAssets(data.nftContract);
+      const nftContract = await getNftContract(address);
+      if (nftContract) {
+        await fetchIPAssets(nftContract);
       } else {
         handleError("No NFT collection found.");
       }
@@ -48,20 +56,9 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     }
   };
 
-  const fetchContract = async (address: string) => {
-    const response = await fetch(
-      `/api/get_nft_contract_by_address?address=${address}`
-    );
-    if (!response.ok) throw new Error("Failed to fetch NFT contract data");
-    return await response.json();
-  };
-
   const fetchIPAssets = async (nftContractAddress: string) => {
     try {
-      const tokensQuantityBigInt = await getTokensQuantity(
-        nftContractAddress,
-        address
-      );
+      const tokensQuantityBigInt = await getTokensQuantity(nftContractAddress, address);
       const tokensQuantity = Number(tokensQuantityBigInt);
 
       if (!tokensQuantity) {
@@ -74,7 +71,7 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
         )
       );
 
-      const IPAssets = assets.filter((asset): asset is IPAsset => asset !== null)
+      const IPAssets = assets.filter((asset): asset is IPAsset => asset !== null);
       setIpAssets(IPAssets);
       setLoading(false);
     } catch (error) {
@@ -100,10 +97,19 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     index: number
   ): Promise<IPAsset | null> => {
     try {
-      const id = await fetchIPAssetId(nftContractAddress, index);  
+      const id = await fetchIPAssetId(nftContractAddress, index);
       const { name, imageUrl } = await fetchMetadata(id as `0x${string}`);
   
-      return { id, name, imageUrl };
+      // Fetch license details and check for commercial use
+      const licenses = await getLicenseTermsData(id as `0x${string}`);
+      const mainLicense = licenses[0]; // Assuming we take the first license as primary
+  
+      return {
+        id,
+        name,
+        imageUrl,
+        licenseId: mainLicense ? parseInt(mainLicense.id, 10) : undefined, // Parse license ID to ensure it's a number
+      };
     } catch (error) {
       console.error(`Error fetching data for index ${index}:`, error);
       return null;
@@ -122,9 +128,7 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     )) as string;
   };
 
-  const fetchMetadata = async (
-    id: `0x${string}`
-  ): Promise<{ name: string; imageUrl: string }> => {
+  const fetchMetadata = async (id: `0x${string}`): Promise<{ name: string; imageUrl: string }> => {
     const coreMetadata = await readContracts(
       coreMetadataViewModuleAddress as `0x${string}`,
       coreMetadataViewModuleABI as Abi,
@@ -156,8 +160,12 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     setLoading(false);
   };
 
+  const filteredAssets = showCommercialOnly
+    ? ipAssets.filter((asset) => asset.licenseId && asset.licenseId !== 1)
+    : ipAssets;
+
   if (loading) {
-    return <div className="text-center p-8">Loading your IP assets...</div>;
+    return <div className="text-center p-8">Loading IP assets...</div>;
   }
 
   if (error) {
@@ -169,27 +177,45 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {ipAssets.map((asset) => (
-        <div
-          key={asset.id}
-          className="bg-white shadow rounded p-4 cursor-pointer"
-          onClick={() => router.push(`/my-ipa/${asset.id}`)}
+    <div>
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setShowCommercialOnly(!showCommercialOnly)}
+          className="bg-gray-600 text-white font-semibold mt-4 px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
         >
-          <div className="relative w-full h-48 md:h-64 lg:h-80">
-            <Image
-              src={asset.imageUrl}
-              alt={asset.name}
-              fill
-              className="object-contain object-center rounded mb-4"
-              sizes="(max-width: 768px) 100vw,
-                       (max-width: 1200px) 50vw,
-                       33vw"
-            />
-          </div>
-          <h2 className="text-xl font-bold mb-2">{asset.name}</h2>
-        </div>
-      ))}
+          {showCommercialOnly ? "Show All Assets" : "Show Only Commercial Licenses"}
+        </button>
+      </div>
+        <Swiper
+          modules={[Navigation]}
+          navigation
+          spaceBetween={1}
+          slidesPerView={2}
+          className="mb-2"
+        >
+          {filteredAssets.map((asset) => (
+            <SwiperSlide key={asset.id}>
+              <div
+                className="bg-white rounded p-4 mr-10 ml-10 cursor-pointer"
+                onClick={() => router.push(`/ipa/${asset.id}`)}
+              >
+                <div className="relative w-full h-48 md:h-64 lg:h-80">
+                  <Image
+                    src={asset.imageUrl}
+                    alt={asset.name}
+                    fill
+                    className="object-contain object-center rounded mb-2"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </div>
+                <h2 className="text-xl text-center font-bold mb-2">
+                  {asset.name}
+                </h2>
+                {asset.licenseId && asset.licenseId !== 1 && <p className="text-gray-600 text-center">(Commercial License)</p>}
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
     </div>
   );
 };

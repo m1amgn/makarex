@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
   if (apiKey !== API_KEY) {
     return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
   }
-
   let body;
   try {
     body = await request.json();

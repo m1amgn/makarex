@@ -4,7 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import React from 'react';
 import IPAssetsList from '@/components/IPAssetsList';
 import { useAccount } from 'wagmi';
-import RegisterIpaButton from '@/components/RegisterIpaButton';
+import RegisterIpaButton from '@/components/buttons/RegisterIpaButton';
 
 const MyIPAssets: React.FC = () => {
   const { address, isConnected } = useAccount();

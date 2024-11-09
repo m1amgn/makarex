@@ -1,17 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { readContracts } from '@/utils/readContracts';
-import { licenseRegistryAddress, licenseRegistryABI } from '@/abi/licenseRegistry';
-import { PILicenseTemplateAddress, PILicenseTemplateABI } from '@/abi/PILicenseTemplate';
-import { Abi } from 'viem';
-import { currencyTokensAddress } from '@/utils/currencyTokenAddress';
-import { Tooltip } from '@/components/TitleToolip';
-import MintLicenseTokensButton from './MintLicenseTokensButton';
+import { currencyTokensAddress } from '@/utils/resources/currencyTokenAddress';
+import { Tooltip } from '@/components/resources/TitleToolip';
+import MintLicenseTokensButton from './buttons/MintLicenseTokensButton';
+import { getLicenseTermsData } from '@/utils/get-data/getLicenseTermsData';
 
 
 interface LicenseDetailsProps {
-  ipId: string;
+  ipaid: `0x${string}`;
   isConnected: boolean;
   isOwner: boolean;
 }
@@ -25,27 +22,7 @@ interface License {
   }>;
 }
 
-interface Terms {
-  transferable: boolean;
-  royaltyPolicy: string;
-  defaultMintingFee: bigint;
-  expiration: bigint;
-  commercialUse: boolean;
-  commercialAttribution: boolean;
-  commercializerChecker: string;
-  commercializerCheckerData: string;
-  commercialRevShare: number;
-  commercialRevCeiling: bigint;
-  derivativesAllowed: boolean;
-  derivativesAttribution: boolean;
-  derivativesApproval: boolean;
-  derivativesReciprocal: boolean;
-  derivativeRevCeiling: bigint;
-  currency: string;
-  uri: string;
-}
-
-const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId, isConnected, isOwner }) => {
+const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipaid, isConnected, isOwner }) => {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,80 +49,22 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId, isConnected, isOw
     'URI': 'The URI of the license terms, which can be used to fetch off-chain license terms.',
   };
 
-  const getLicenseTermsCount = async (ipId: `0x${string}`): Promise<bigint> => {
-    return await readContracts(
-      licenseRegistryAddress as `0x${string}`,
-      licenseRegistryABI as Abi,
-      "getAttachedLicenseTermsCount",
-      [ipId]
-    );
-  };
-
-  const getAttachedLicenseTerms = async (ipId: `0x${string}`, index: number): Promise<number> => {
-    const licenseTerms = await readContracts(
-      licenseRegistryAddress as `0x${string}`,
-      licenseRegistryABI as Abi,
-      "getAttachedLicenseTerms",
-      [ipId, index]
-    );
-    return Number(licenseTerms[1]);
-  };
-
-  const getLicenseTerm = async (attachedLicenseTerm: number): Promise<Terms> => {
-    return await readContracts(
-      PILicenseTemplateAddress as `0x${string}`,
-      PILicenseTemplateABI as Abi,
-      "getLicenseTerms",
-      [attachedLicenseTerm]
-    );
-  };
-
   useEffect(() => {
-    const fetchLicenses = async () => {
-      setLoading(true);
-      try {
-        const licenseTermsCount = await getLicenseTermsCount(ipId as `0x${string}`);
-        const licenseDetails: License[] = [];
-
-        for (let index = 0; index < Number(licenseTermsCount); index++) {
-          const attachedLicenseTermId = await getAttachedLicenseTerms(ipId as `0x${string}`, index);
-          const licenseTerm = await getLicenseTerm(attachedLicenseTermId as number);
-          const license: License = {
-            id: attachedLicenseTermId.toString(),
-            licenseTerms: [
-              { trait_type: 'Commercial Use', value: licenseTerm.commercialUse.toString() },
-              { trait_type: 'Transferable', value: licenseTerm.transferable.toString() },
-              { trait_type: 'Derivatives Allowed', value: licenseTerm.derivativesAllowed.toString() },
-              { trait_type: 'Derivatives Attribution', value: licenseTerm.derivativesAttribution.toString() },
-              { trait_type: 'Derivatives Approval', value: licenseTerm.derivativesApproval.toString() },
-              { trait_type: 'Derivatives Reciprocal', value: licenseTerm.derivativesReciprocal.toString() },
-              // { trait_type: 'Expiration', value: licenseTerm.expiration.toString() },
-              { trait_type: 'Commercial Attribution', value: licenseTerm.commercialAttribution.toString() },
-              // { trait_type: 'Commercializer Checker', value: licenseTerm.commercializerChecker },
-              // { trait_type: 'Commercializer Checker Data', value: licenseTerm.commercializerCheckerData },
-              { trait_type: 'Minting Fee (currency)', value: licenseTerm.defaultMintingFee.toString() },
-              { trait_type: 'Commercial Rev Share (%)', value: licenseTerm.commercialRevShare / 10 ** 6 },
-              { trait_type: 'Commercial Rev Ceiling (currency)', value: licenseTerm.commercialRevCeiling.toString() },
-              { trait_type: 'Derivative Rev Ceiling (currency)', value: licenseTerm.derivativeRevCeiling.toString() },
-              { trait_type: 'Currency', value: licenseTerm.currency },
-              { trait_type: 'Royalty Policy', value: licenseTerm.royaltyPolicy },
-              // { trait_type: 'URI', value: licenseTerm.uri },
-            ]
-          };
-
-          licenseDetails.push(license);
-        }
-
-        setLicenses(licenseDetails);
-      } catch (error: any) {
-        console.error('Error loading licenses:', error);
-        setError('Failed to load licenses. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLicenses();
-  }, [ipId]);
+  }, [ipaid]);
+
+  const fetchLicenses = async () => {
+    setLoading(true);
+    try {
+      const licenseDetails = await getLicenseTermsData(ipaid);
+      setLicenses(licenseDetails);
+    } catch (error: any) {
+      console.error('Error loading licenses:', error);
+      setError('Failed to load licenses. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleLicenseDetails = (licenseId: string) => {
     setExpandedLicenseIds(prev =>
@@ -186,7 +105,7 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipId, isConnected, isOw
               License ID: {license.id} {license.id === '1' ? '(Non-commercial)' : '(Commercial)'}
             </h4>
             {isConnected && isOwner && license.id !== '1' && (
-              <MintLicenseTokensButton ipId={ipId} licenseTermsId={license.id} />
+              <MintLicenseTokensButton ipaid={ipaid} licenseTermsId={license.id} />
             )}
           </div>
           {expandedLicenseIds.includes(license.id) && (

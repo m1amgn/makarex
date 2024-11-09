@@ -4,9 +4,10 @@ import React, { FormEvent, useEffect, useState } from 'react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { notFound, useRouter } from 'next/navigation'
-import { setupStoryClient } from "@/utils/storyClient";
-import { getIPAOwner } from '@/utils/getIPAOwner';
+import { setupStoryClient } from "@/utils/resources/storyClient";
+import { getIPAOwner } from '@/utils/get-data/getIPAOwner';
 import { checksumAddress } from 'viem';
+import BackToIPAButton from '@/components/buttons/BackToIPAButton';
 
 interface PageProps {
     params: {
@@ -135,14 +136,8 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-8">
-            {/* Back Button */}
             <div className="flex justify-between items-center mb-4">
-                <button
-                    onClick={() => router.push(`/my-ipa/${ipaid}`)}
-                    className="py-2 px-4 rounded-md bg-gray-100 text-gray-700 font-semibold hover:bg-gray-300 transition duration-300"
-                >
-                    Back
-                </button>
+                <BackToIPAButton ipaid={ipaid} />
                 <ConnectButton />
             </div>
 
