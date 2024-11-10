@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 
+
 interface AssetDetailsProps {
   IPAData: {
     nftTokenURI: string;
@@ -12,6 +13,7 @@ interface AssetDetailsProps {
     registrationDate: number;
     owner: `0x${string}`;
   } | null;
+  ipaid: `0x${string}`;
 }
 
 interface nftTokenData {
@@ -29,7 +31,7 @@ interface IPAMetadata {
   }>;
 }
 
-const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData }) => {
+const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
   const [nftTokenData, setNftTokenData] = useState<nftTokenData | null>(null);
   const [IPAMetadata, setIPAMetadata] = useState<IPAMetadata | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -112,7 +114,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData }) => {
           <div className="mt-8">
             <p className="mb-2">
               <a
-                href={`https://odyssey.explorer.story.foundation/ipa/${IPAData?.nftMetadataHash}`}
+                href={`https://odyssey.explorer.story.foundation/ipa/${ipaid}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-gray-400 hover:underline"
@@ -142,7 +144,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData }) => {
             </p>
 
             <p className="mb-2">
-              <strong>IPA Address:</strong> {IPAData?.nftMetadataHash}
+              <strong>IPA Address:</strong> {ipaid}
             </p>
           </div>
 

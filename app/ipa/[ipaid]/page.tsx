@@ -83,7 +83,7 @@ const AssetDetailsPage: React.FC<PageProps> = ({ params }) => {
         <ConnectButton />
       </div>
       <div className="container mx-auto">
-        <AssetDetails IPAData={IPAData} />
+        <AssetDetails IPAData={IPAData} ipaid={ipaid} />
         {isConnected && address && isOwner && (
           <div className='text-center rounded mb-4'>
             <AddCommercialLicenseButton ipaid={ipaid} />

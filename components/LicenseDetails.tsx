@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { currencyTokensAddress } from '@/utils/resources/currencyTokenAddress';
-import { Tooltip } from '@/components/resources/TitleToolip';
+import { Tooltip } from '@/components/resources/TitleTooltip';
 import MintLicenseTokensButton from './buttons/MintLicenseTokensButton';
 import { getLicenseTermsData } from '@/utils/get-data/getLicenseTermsData';
 
