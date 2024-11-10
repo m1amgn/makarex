@@ -159,7 +159,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
             console.log("Response:", response);
 
             alert(`License added successfully! Transaction Hash: ${response.txHash}`);
-            router.push(`/my-ipa/${ipaid}`);
+            router.push(`/ipa/${ipaid}`);
         } catch (error: any) {
             console.error("Error adding license:", error);
             setError(`Error adding license: ${error.message}`);

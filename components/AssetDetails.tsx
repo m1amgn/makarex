@@ -1,8 +1,7 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface AssetDetailsProps {
   IPAData: {
@@ -44,12 +43,14 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
         if (IPAData) {
           const tokenURIResponse = await fetch(IPAData.nftTokenURI);
           if (!tokenURIResponse.ok) {
-            throw new Error(`Failed to fetch token URI metadata: ${IPAData.nftTokenURI}`);
+            throw new Error(
+              `Failed to fetch token URI metadata: ${IPAData.nftTokenURI}`
+            );
           }
           const tokenData = await tokenURIResponse.json();
 
           if (!tokenData.name || !tokenData.description || !tokenData.image) {
-            throw new Error('Invalid token URI metadata structure.');
+            throw new Error("Invalid token URI metadata structure.");
           }
 
           setNftTokenData({
@@ -60,12 +61,18 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
 
           const metadataURIResponse = await fetch(IPAData.metadataURI);
           if (!metadataURIResponse.ok) {
-            throw new Error(`Failed to fetch metadata URI: ${IPAData.metadataURI}`);
+            throw new Error(
+              `Failed to fetch metadata URI: ${IPAData.metadataURI}`
+            );
           }
           const metadataData = await metadataURIResponse.json();
 
-          if (!metadataData.title || !metadataData.description || !metadataData.attributes) {
-            throw new Error('Invalid metadata URI structure.');
+          if (
+            !metadataData.title ||
+            !metadataData.description ||
+            !metadataData.attributes
+          ) {
+            throw new Error("Invalid metadata URI structure.");
           }
 
           setIPAMetadata({
@@ -74,11 +81,11 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
             attributes: metadataData.attributes,
           });
         } else {
-          setError('Asset not found.');
+          setError("Asset not found.");
         }
       } catch (err) {
-        console.error('Error fetching metadata:', err);
-        setError('Error fetching asset metadata.');
+        console.error("Error fetching metadata:", err);
+        setError("Error fetching asset metadata.");
       } finally {
         setIsLoading(false);
       }
@@ -92,7 +99,11 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
   }
 
   if (error || !nftTokenData || !IPAMetadata) {
-    return <div className="text-center p-8 text-red-500">Error: {error || 'Asset not found'}</div>;
+    return (
+      <div className="text-center p-8 text-red-500">
+        Error: {error || "Asset not found"}
+      </div>
+    );
   }
 
   return (
@@ -100,7 +111,11 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
       <div className="mb-6 flex flex-col md:flex-row gap-8">
         <div className="relative w-full md:w-1/2 h-48 md:h-64 lg:h-80">
           <Image
-            src={nftTokenData.image.startsWith('ipfs://') ? nftTokenData.image.replace('ipfs://', 'https://ipfs.io/ipfs/') : nftTokenData.image}
+            src={
+              nftTokenData.image.startsWith("ipfs://")
+                ? nftTokenData.image.replace("ipfs://", "https://ipfs.io/ipfs/")
+                : nftTokenData.image
+            }
             alt={nftTokenData.name}
             fill
             className="object-contain object-left rounded mb-4"
@@ -124,7 +139,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
             </p>
             <p className="mb-2">
               <a
-                href={IPAData?.nftTokenURI || ''}
+                href={IPAData?.nftTokenURI || ""}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-gray-400 hover:underline"
@@ -134,7 +149,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ IPAData, ipaid }) => {
             </p>
             <p className="mb-8">
               <a
-                href={IPAData?.metadataURI || ''}
+                href={IPAData?.metadataURI || ""}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-gray-400 hover:underline"

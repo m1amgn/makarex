@@ -1,29 +1,90 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import React from 'react';
+import Link from "next/link";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Menu,
+  MenuItem,
+} from "@mui/material";
+import React, { useState } from "react";
 
-const Nav: React.FC = () => {
-    return (
-        <nav className="bg-gray-600 shadow-lg">
-            <div className="container mx-auto px-4">
-                <div className="flex justify-center space-x-8 py-4">
-                    <Link href="/" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
-                        Main
-                    </Link>
-                    <Link href="/my-ipa" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
-                        My IPA
-                    </Link>
-                    <Link href="/register-ipa" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
-                        Register IPA
-                    </Link>
-                    <Link href="/gallery" className="text-gray-200 text-lg font-medium hover:text-gray-400 transition-colors duration-200">
-                        Gallery
-                    </Link>
-                </div>
-            </div>
-        </nav>
-    );
+const Navigation: React.FC = () => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  return (
+    <AppBar position="static" sx={{ backgroundColor: "#333" }}>
+      <Toolbar>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ flexGrow: 1, color: "#ccc" }}
+        >
+          MyApp
+        </Typography>
+        <Link href="/" passHref>
+          <Button sx={{ color: "#ccc", "&:hover": { color: "#fff" } }}>
+            Home
+          </Button>
+        </Link>
+        <Link href="/gallery" passHref>
+          <Button sx={{ color: "#ccc", "&:hover": { color: "#fff" } }}>
+            Gallery
+          </Button>
+        </Link>
+        <Button
+          sx={{ color: "#ccc", "&:hover": { color: "#fff" } }}
+          onClick={handleClick}
+        >
+          Profile
+        </Button>
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleClose}
+          MenuListProps={{
+            sx: {
+              backgroundColor: "#444",
+              color: "#ccc",
+            },
+          }}
+        >
+          <Link href="/profile/my-ipa" passHref>
+            <MenuItem
+              onClick={handleClose}
+              sx={{
+                color: "#ccc",
+                "&:hover": { backgroundColor: "#555", color: "#fff" },
+              }}
+            >
+              My IPA
+            </MenuItem>
+          </Link>
+          <Link href="/profile/register-ipa" passHref>
+            <MenuItem
+              onClick={handleClose}
+              sx={{
+                color: "#ccc",
+                "&:hover": { backgroundColor: "#555", color: "#fff" },
+              }}
+            >
+              Register IPA
+            </MenuItem>
+          </Link>
+        </Menu>
+      </Toolbar>
+    </AppBar>
+  );
 };
 
-export default Nav;
+export default Navigation;

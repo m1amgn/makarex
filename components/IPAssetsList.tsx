@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from 'next/image';
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Abi } from "viem";
 import { readContracts } from "@/utils/get-data/readContracts";
@@ -58,7 +58,10 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
 
   const fetchIPAssets = async (nftContractAddress: string) => {
     try {
-      const tokensQuantityBigInt = await getTokensQuantity(nftContractAddress, address);
+      const tokensQuantityBigInt = await getTokensQuantity(
+        nftContractAddress,
+        address
+      );
       const tokensQuantity = Number(tokensQuantityBigInt);
 
       if (!tokensQuantity) {
@@ -71,7 +74,9 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
         )
       );
 
-      const IPAssets = assets.filter((asset): asset is IPAsset => asset !== null);
+      const IPAssets = assets.filter(
+        (asset): asset is IPAsset => asset !== null
+      );
       setIpAssets(IPAssets);
       setLoading(false);
     } catch (error) {
@@ -99,11 +104,11 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     try {
       const id = await fetchIPAssetId(nftContractAddress, index);
       const { name, imageUrl } = await fetchMetadata(id as `0x${string}`);
-  
+
       // Fetch license details and check for commercial use
       const licenses = await getLicenseTermsData(id as `0x${string}`);
       const mainLicense = licenses[0]; // Assuming we take the first license as primary
-  
+
       return {
         id,
         name,
@@ -128,7 +133,9 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     )) as string;
   };
 
-  const fetchMetadata = async (id: `0x${string}`): Promise<{ name: string; imageUrl: string }> => {
+  const fetchMetadata = async (
+    id: `0x${string}`
+  ): Promise<{ name: string; imageUrl: string }> => {
     const coreMetadata = await readContracts(
       coreMetadataViewModuleAddress as `0x${string}`,
       coreMetadataViewModuleABI as Abi,
@@ -145,7 +152,8 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
     }
 
     const metadata = await metadataResponse.json();
-    if (!metadata.name || !metadata.image) throw new Error("Metadata missing 'name' or 'image' field");
+    if (!metadata.name || !metadata.image)
+      throw new Error("Metadata missing 'name' or 'image' field");
 
     return { name: metadata.name, imageUrl: metadata.image };
   };
@@ -183,39 +191,54 @@ const IPAssetsList: React.FC<IPAssetsListProps> = ({ address }) => {
           onClick={() => setShowCommercialOnly(!showCommercialOnly)}
           className="bg-gray-600 text-white font-semibold mt-4 px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
         >
-          {showCommercialOnly ? "Show All Assets" : "Show Only Commercial Licenses"}
+          {showCommercialOnly
+            ? "Show All Assets"
+            : "Show Only Commercial Licenses"}
         </button>
       </div>
-        <Swiper
-          modules={[Navigation]}
-          navigation
-          spaceBetween={1}
-          slidesPerView={2}
-          className="mb-2"
-        >
-          {filteredAssets.map((asset) => (
-            <SwiperSlide key={asset.id}>
-              <div
-                className="bg-white rounded p-4 mr-10 ml-10 cursor-pointer"
-                onClick={() => router.push(`/ipa/${asset.id}`)}
-              >
-                <div className="relative w-full h-48 md:h-64 lg:h-80">
-                  <Image
-                    src={asset.imageUrl}
-                    alt={asset.name}
-                    fill
-                    className="object-contain object-center rounded mb-2"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                </div>
-                <h2 className="text-xl text-center font-bold mb-2">
-                  {asset.name}
-                </h2>
-                {asset.licenseId && asset.licenseId !== 1 && <p className="text-gray-600 text-center">(Commercial License)</p>}
+      <Swiper
+        modules={[Navigation]}
+        navigation
+        spaceBetween={1}
+        slidesPerView={2}
+        className="mb-2"
+      >
+        {filteredAssets.map((asset, index) => (
+          <SwiperSlide key={asset.id}>
+            <div
+              className="bg-white rounded p-4 mr-10 ml-10 cursor-pointer"
+              onClick={() => router.push(`/ipa/${asset.id}`)}
+            >
+              <div className="relative w-full h-48 md:h-64 lg:h-80">
+                <Image
+                  src={
+                    asset.imageUrl.startsWith("ipfs://")
+                      ? asset.imageUrl.replace(
+                          "ipfs://",
+                          "https://ipfs.io/ipfs/"
+                        )
+                      : asset.imageUrl
+                  }
+                  alt={asset.name}
+                  fill
+                  className="object-contain rounded"
+                  priority={index < 2} // Only prioritize the first two images
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  loading={index < 2 ? undefined : "lazy"} // Use "lazy" loading only for non-priority images
+                />
               </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+              <h2 className="text-xl text-center font-bold mb-2">
+                {asset.name}
+              </h2>
+              {asset.licenseId && asset.licenseId !== 1 && (
+                <p className="text-gray-600 text-center">
+                  (Commercial License)
+                </p>
+              )}
+            </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
     </div>
   );
 };

@@ -105,7 +105,6 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
             return;
         }
 
-
         try {
             setIsProcessing(true);
             const client = setupStoryClient(wallet);
@@ -124,7 +123,7 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
             });
 
             alert(`License Token minted https://testnet.storyscan.xyz/tx/${response.txHash}, License IDs: ${response.licenseTokenIds}`);
-            router.push(`/my-ipa/${ipaid}`);
+            router.push(`/ipa/${ipaid}`);
 
         } catch (error) {
             console.error('Error during minting:', error);
