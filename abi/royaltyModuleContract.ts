@@ -1,0 +1,1 @@
+export const royaltyModuleContractAddress = "0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B" as const;

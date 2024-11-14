@@ -1,13 +1,16 @@
 'use client';
 
 import React, { FormEvent, useEffect, useState } from 'react';
-import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
+import { useAccount, useWalletClient } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { notFound, useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { setupStoryClient } from "@/utils/resources/storyClient";
 import { getIPAOwner } from '@/utils/get-data/getIPAOwner';
 import { checksumAddress } from 'viem';
 import BackToIPAButton from '@/components/buttons/BackToIPAButton';
+import { sendApproveTransaction } from '@/utils/send-transactions/sendApproveTransaction';
+import { royaltyModuleContractAddress } from '@/abi/royaltyModuleContract';
+
 
 interface PageProps {
     params: {
@@ -16,25 +19,9 @@ interface PageProps {
     };
 }
 
-interface IPAssetDetails {
-    id: string;
-    nftMetadata: {
-        name: string;
-        imageUrl: string;
-        tokenUri: string;
-        tokenId: string;
-        tokenContract: string;
-    };
-}
-
-interface License {
-    licenseTermsId: string;
-}
-
 const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
     const { ipaid, licenseTermsId } = params;
     const { address, isConnected } = useAccount();
-    const [selectedLicense, setSelectedLicense] = useState<string>(licenseTermsId || '');
     const [receiverAddress, setReceiverAddress] = useState<string>('');
     const [amount, setAmount] = useState<number>(1);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -43,6 +30,9 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
     const { data: wallet } = useWalletClient();
     const router = useRouter();
     const [isOwner, setIsOwner] = useState<boolean>(false);
+    const searchParams = useSearchParams();
+    const fee = BigInt(searchParams.get('fee') ?? '0');    
+    const currency = searchParams.get('currency') as `0x${string}` ?? '';
 
 
     useEffect(() => {
@@ -107,12 +97,15 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
 
         try {
             setIsProcessing(true);
-            const client = setupStoryClient(wallet);
-            if (!client) {
-                setError('Client is not initialized');
+            const approveReceipt = await sendApproveTransaction(wallet, royaltyModuleContractAddress, fee, currency)
+
+            if (!approveReceipt || approveReceipt.status !== 'success') {
+                setError("Approve transaction failed.");
                 setIsProcessing(false);
                 return;
             }
+
+            alert(`Approve transaction confirmed. Hash: ${approveReceipt.transactionHash}`);
 
             const response = await client.license.mintLicenseTokens({
                 licenseTermsId: licenseTermsId,
@@ -184,9 +177,9 @@ const MintLicenseTokensPage: React.FC<PageProps> = ({ params }) => {
                                             checked={receiverAddress === address}
                                             onChange={(e) => {
                                                 if (e.target.checked) {
-                                                    setReceiverAddress(address || ''); // Set to user's address
+                                                    setReceiverAddress(address || '');
                                                 } else {
-                                                    setReceiverAddress(''); // Allow manual input
+                                                    setReceiverAddress('');
                                                 }
                                             }}
                                         />

@@ -130,8 +130,11 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
         }
 
         try {
+
+            const mintFee = BigInt(parseFloat(formData.defaultMintingFee.toString()) * 10 ** 18);
+
             const licenseTerms: LicenseTerms = {
-                defaultMintingFee: BigInt(formData.defaultMintingFee),
+                defaultMintingFee: mintFee,
                 currency: formData.currency,
                 royaltyPolicy: formData.royaltyPolicy,
                 transferable: formData.transferable,
@@ -365,6 +368,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                     title="The fee to be paid when minting a license."
+                                    step="0.00001"
                                 />
                             </div>
                             {/* <div>
@@ -443,6 +447,7 @@ const AddCommercialLicensePage: React.FC<PageProps> = ({ params }) => {
                                     required
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                                     title="Amount of revenue (from any source, original & derivative) that must be shared with the licensor."
+                                    step="0.01"
                                 />
                             </div>
                             <div>

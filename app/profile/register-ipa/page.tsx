@@ -249,9 +249,11 @@ const CreateIpaPage: React.FC = () => {
         formData.commercialLicense &&
         formData.licenseType === "COMMERCIAL_USE"
       ) {
-        const mintFee = parseInt(formData.mintFee, 10);
+        const mintFeeStr = formData.mintFee;
+        const mintFee = BigInt(Math.round(parseFloat(mintFeeStr) * 10 ** 18));
 
-        if (isNaN(mintFee)) {
+
+        if (mintFee < BigInt(0)) {
           setErrorMessage(
             "Mint Fee and Revenue Share must be valid numbers."
           );
@@ -283,7 +285,7 @@ const CreateIpaPage: React.FC = () => {
         formData.licenseType === "COMMERCIAL_REMIX"
       ) {
         const revenueShare = parseInt(formData.revenueShare, 10);
-        const mintFee = parseInt(formData.mintFee, 10);
+        const mintFee = BigInt(formData.mintFee) * BigInt(10 ** 18);
 
         if (isNaN(revenueShare)) {
           setErrorMessage("Revenue Share must be valid numbers.");
@@ -330,7 +332,7 @@ const CreateIpaPage: React.FC = () => {
       console.log("Response:", response);
 
       alert(`IPA: https://odyssey.explorer.story.foundation//ipa/${response.ipId}`);
-      router.push(`/my-ipa`);
+      router.push(`/profile/my-ipa`);
 
     } catch (error: any) {
       console.error("Error in registration IPA:", error);
@@ -544,6 +546,7 @@ const CreateIpaPage: React.FC = () => {
                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                         min="0"
                         max="100"
+                        step="0.01"
                       />
                     </div>
                   )}
@@ -558,6 +561,7 @@ const CreateIpaPage: React.FC = () => {
                         required
                         className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
                         min="0"
+                        step="0.00001"
                       />
                     </div>
                   )}

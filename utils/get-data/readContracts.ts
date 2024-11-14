@@ -1,12 +1,7 @@
 import { odyssey } from "@story-protocol/core-sdk";
 import { Abi, createPublicClient, http } from "viem";
+import { publicClient } from "@/utils/resources/publicClient"
 
-export const baseConfig = {
-    chain: odyssey,
-    transport: http(),
-  } as const;
-  
-export const publicClient = createPublicClient(baseConfig);
 
 export const readContracts = async (
     address: `0x${string}`,

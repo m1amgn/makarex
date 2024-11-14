@@ -104,9 +104,22 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipaid, isConnected, isO
             >
               License ID: {license.id} {license.id === '1' ? '(Non-commercial)' : '(Commercial)'}
             </h4>
-            {isConnected && isOwner && license.id !== '1' && (
-              <MintLicenseTokensButton ipaid={ipaid} licenseTermsId={license.id} />
-            )}
+            {isConnected && isOwner && license.id !== '1' && (() => {
+              const mintingFeeTerm = license.licenseTerms.find(term => term.trait_type === 'Minting Fee (currency)');
+              const currencyTerm = license.licenseTerms.find(term => term.trait_type === 'Currency');
+
+              const mintingFee = mintingFeeTerm?.value ? BigInt(mintingFeeTerm.value) : BigInt(0);
+              const currency = currencyTerm?.value as `0x${string}` ?? '';
+
+              return (
+                <MintLicenseTokensButton
+                  ipaid={ipaid}
+                  licenseTermsId={license.id}
+                  mintingFee={mintingFee}
+                  currency={currency}
+                />
+              );
+            })()}
           </div>
           {expandedLicenseIds.includes(license.id) && (
             <div className="space-y-2 mt-4">
@@ -120,6 +133,8 @@ const LicenseDetails: React.FC<LicenseDetailsProps> = ({ ipaid, isConnected, isO
                   <span className="text-gray-900">
                     {term.trait_type === 'Currency'
                       ? getCurrencySymbol(term.value as string)
+                      : term.trait_type === 'Minting Fee (currency)'
+                      ? parseFloat((parseFloat(term.value.toString()) / 10 ** 18).toFixed(5)).toString()
                       : term.value.toString()}
                     {term.max_value ? ` (Max: ${term.max_value})` : ''}
                   </span>
